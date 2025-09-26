@@ -1,0 +1,6 @@
+# I would recommend that your project is structured as an n-layer architecture.
+# View layer - service layer - data layer
+# We receive inputs / produce outputs on one layer of the app (CLI / API),
+# We perform business rules on the service layer (EG, defining the valid years
+for a song)
+# We perform the actual data transformations on a data layer.

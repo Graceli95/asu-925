@@ -1,0 +1,5 @@
+---
+description: Direct DB operations should always be done in the "db" layer.
+globs:
+alwaysApply: true
+---

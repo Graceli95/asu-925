@@ -1,0 +1,8 @@
+# I'd like to consolidate all imports in a module to the top of the module, 
+following the module's documentation.
+# I'd like to define constants for the project in a separate .env file
+# Every test is a separate modules.
+# Separate our implementation modules between DB, Service, View, Model, 
+Exception
+# We should always use models & DTO's to model data.
+# Returning from the DB should always return the full data of the affected entity.

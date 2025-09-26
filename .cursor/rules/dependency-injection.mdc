@@ -1,0 +1,5 @@
+---
+description: All modules should follow Dependency Injection (ie, object that used in a class is provided via the constructor)
+globs:
+alwaysApply: true
+---
