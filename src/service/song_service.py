@@ -5,9 +5,9 @@ Handles business logic and coordinates between CLI and data layers
 
 from typing import List, Optional, Dict, Any
 from datetime import datetime
-from db.songs_db import SongsDatabase
-from model import Song
-from .file_handler import SongFileHandler
+from src.db.songs_db import SongsDatabase
+from src.model import Song
+from src.service.file_handler import SongFileHandler
 
 
 class SongService:

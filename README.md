@@ -1,17 +1,21 @@
-# Songs CLI CRUD Application
+# Songs API - FastAPI Application
 
-A Python command-line interface for managing songs with MongoDB backend. This application follows a layered architecture with service-based business logic for robust song management.
+A RESTful API for managing songs with MongoDB backend. This application follows a layered architecture with service-based business logic for robust song management.
+
+> **Note**: This application has been migrated from CLI to FastAPI. For CLI documentation, see the legacy `songs_cli.py` file.
 
 ## Features
 
+- **RESTful API**: Full HTTP-based CRUD operations (GET, POST, PUT, DELETE)
 - **CRUD Operations**: Create, Read, Update, Delete songs
 - **User Tracking**: Each operation is associated with a specific user
 - **Search Functionality**: Search songs by title or artist with case-insensitive matching
-- **User Statistics**: View analytics about your song collection
+- **User Statistics**: View analytics about your song collection via API endpoint
 - **File Export**: Automatically creates .txt files in the assets folder for each song (format: "Artist - Title.txt")
-- **Rich CLI Interface**: Beautiful command-line interface with tables and colors
-- **Layered Architecture**: Clean separation between CLI, service, database, and model layers
-- **Business Logic Validation**: Comprehensive input validation and error handling
+- **Interactive API Docs**: Built-in Swagger UI and ReDoc documentation
+- **Layered Architecture**: Clean separation between API, service, database, and model layers
+- **Input Validation**: Pydantic schemas for request/response validation
+- **CORS Enabled**: Ready for frontend integration
 
 ## Setup
 
@@ -27,75 +31,80 @@ A Python command-line interface for managing songs with MongoDB backend. This ap
    project_db_name=songs
    ```
 
-3. **Run the Application**:
+3. **Run the API Server**:
    ```bash
-   python songs_cli.py
+   python start_api.py
+   ```
+   
+   Or directly with uvicorn:
+   ```bash
+   uvicorn main:app --reload
    ```
 
-## Usage
+4. **Access the API**:
+   - API Base URL: `http://localhost:8000`
+   - Interactive Docs (Swagger): `http://localhost:8000/docs`
+   - Alternative Docs (ReDoc): `http://localhost:8000/redoc`
 
-### Interactive Menu Interface
+## API Usage
 
-The application uses an interactive menu-driven interface. Simply run the main script:
+### Quick Start with cURL
 
+**Create a song:**
 ```bash
-python songs_cli.py
+curl -X POST "http://localhost:8000/songs" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Bohemian Rhapsody",
+    "artist": "Queen",
+    "user": "john_doe",
+    "genre": "Rock",
+    "year": 1975
+  }'
 ```
 
-You'll be prompted to enter your username, then presented with a menu of options:
-
-```
-Available Commands:
-1. add - Add a new song
-2. list - List all songs
-3. search - Search songs
-4. play - Mark a song as played
-5. update - Update a song
-6. delete - Delete a song
-7. stats - Show user statistics
-8. quit - Exit the application
+**List songs for a user:**
+```bash
+curl "http://localhost:8000/songs?user=john_doe"
 ```
 
-
-### Menu-Driven Operations
-
-**1. Add Song**: Prompts for title, artist, genre (optional), and year (optional)
-**2. List Songs**: Shows all songs for the current user
-**3. Search Songs**: Prompts for search query with option to search across all users
-**4. Play Song**: Prompts for song ID to mark as played
-**5. Update Song**: Prompts for song ID, then allows editing of title, artist, genre, and year
-**6. Delete Song**: Prompts for song ID with confirmation before deletion
-**7. Stats**: Shows user statistics including top genres, artists, and years
-**8. Quit**: Exit the application
-
-### Example Session
-
+**Search songs:**
+```bash
+curl "http://localhost:8000/songs/search?query=Bohemian&user=john_doe"
 ```
-$ python songs_cli.py
-🎵 Songs CLI CRUD Application
-Enter your username: Ted
-Welcome, Ted!
 
-Available Commands:
-1. add - Add a new song
-2. list - List all songs
-3. search - Search songs
-4. play - Mark a song as played
-5. update - Update a song
-6. delete - Delete a song
-7. stats - Show user statistics
-8. quit - Exit the application
-
-Enter your choice [1/2/3/4/5/6/7/8]: 1
-Enter song title: Bohemian Rhapsody
-Enter artist name: Queen
-Enter genre (optional): Rock
-Enter year (optional): 1975
-✓ Song 'Bohemian Rhapsody' by 'Queen' added successfully
-
-Enter your choice [1/2/3/4/5/6/7/8]: 8
-Goodbye!
+**Update a song:**
+```bash
+curl -X PUT "http://localhost:8000/songs/{song_id}?user=john_doe" \
+  -H "Content-Type: application/json" \
+  -d '{"year": 1976}'
 ```
+
+**Delete a song:**
+```bash
+curl -X DELETE "http://localhost:8000/songs/{song_id}?user=john_doe"
+```
+
+**Get user statistics:**
+```bash
+curl "http://localhost:8000/users/john_doe/stats"
+```
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/` | Root endpoint |
+| POST | `/songs` | Create a new song |
+| GET | `/songs` | List all songs (optional user filter) |
+| GET | `/songs/search` | Search songs by title/artist |
+| GET | `/songs/{song_id}` | Get a specific song |
+| PUT | `/songs/{song_id}` | Update a song |
+| DELETE | `/songs/{song_id}` | Delete a song |
+| POST | `/songs/{song_id}/play` | Mark song as played |
+| GET | `/users/{user}/stats` | Get user statistics |
+
+For detailed API documentation with request/response schemas, visit `http://localhost:8000/docs` after starting the server.
 
 ## Database Schema
 
@@ -138,30 +147,35 @@ The application uses the following environment variables:
 The application follows a clean layered architecture:
 
 ```
-CLI Layer (songs_cli.py)
+API Layer (main.py) ← FastAPI endpoints
     ↓
-CLI Commands (songs_cli_commands.py)
+Schemas Layer (src/schemas.py) ← Pydantic validation
     ↓
-Service Layer (service/song_service.py) ← Business Logic
+Service Layer (src/service/song_service.py) ← Business Logic
     ↓
-Database Layer (db/songs_db.py)
+Database Layer (src/db/songs_db.py)
     ↓
-Model Layer (model/song.py)
+Model Layer (src/model/song.py)
 ```
 
 ## Project Structure
 
 ```
-├── songs_cli.py              # Main CLI application (interactive menu)
+├── main.py                   # FastAPI application entry point
+├── start_api.py              # API server startup script
+├── API_README.md             # Detailed API documentation
 ├── assets/                   # Exported song files (.txt format)
-├── service/                  # Service layer (business logic)
-│   ├── __init__.py
-│   └── song_service.py
-├── db/                       # Database layer
-│   └── songs_db.py
-├── model/                    # Data models
-│   ├── __init__.py
-│   └── song.py
+├── src/
+│   ├── schemas.py            # Pydantic schemas for validation
+│   ├── db/
+│   │   └── songs_db.py       # Database layer
+│   ├── model/
+│   │   ├── __init__.py
+│   │   └── song.py           # Song model
+│   └── service/
+│       ├── __init__.py
+│       ├── song_service.py   # Business logic
+│       └── file_handler.py   # File operations
 ├── test/                     # Test suite
 │   ├── conftest.py           # Test fixtures
 │   ├── test_database.py      # Database tests
@@ -170,11 +184,13 @@ Model Layer (model/song.py)
 │   ├── test_user_isolation.py # User isolation tests
 │   ├── test_display.py       # Display function tests
 │   ├── test_service.py       # Service layer tests
-│   ├── run_tests.py          # Test runner
 │   └── README.md             # Test documentation
 ├── requirements.txt          # Dependencies
 ├── requirements-test.txt     # Test dependencies
 └── README.md                 # This file
+
+Legacy Files (deprecated):
+├── songs_cli.py              # Old CLI application
 ```
 
 ## Requirements

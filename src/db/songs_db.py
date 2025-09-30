@@ -14,7 +14,7 @@ from pymongo.errors import ServerSelectionTimeoutError, DuplicateKeyError
 from bson import ObjectId
 
 # Import models
-from model import Song
+from src.model import Song
 
 # Load environment variables
 load_dotenv()

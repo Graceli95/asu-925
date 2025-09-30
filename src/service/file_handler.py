@@ -6,7 +6,7 @@ Handles creation and management of song files in the assets directory
 import os
 import re
 from typing import Optional
-from model import Song
+from src.model import Song
 
 
 class SongFileHandler:

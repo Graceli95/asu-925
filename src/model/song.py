@@ -70,3 +70,16 @@ class Song:
         """Detailed representation of the song"""
         return (f"Song(title='{self.title}', artist='{self.artist}', "
                 f"user='{self.user}', genre='{self.genre}', year={self.year})")
+    
+    def to_response(self) -> Dict[str, Any]:
+        """Convert song to API response format"""
+        return {
+            "id": str(self._id) if self._id else None,
+            "title": self.title,
+            "artist": self.artist,
+            "user": self.user,
+            "genre": self.genre,
+            "year": self.year,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at
+        }
