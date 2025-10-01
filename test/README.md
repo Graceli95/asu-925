@@ -1,6 +1,6 @@
-# Songs CLI Test Suite
+# Test Suite Documentation
 
-This directory contains the organized test suite for the Songs CLI application. The tests have been split into logical modules for better organization and maintainability.
+This directory contains the organized test suite for the Songs API application. The tests have been split into logical modules for better organization and maintainability.
 
 ## Test Structure
 
@@ -10,6 +10,8 @@ This directory contains the organized test suite for the Songs CLI application. 
 - `test_search.py` - Song search functionality tests
 - `test_user_isolation.py` - User isolation and data privacy tests
 - `test_display.py` - Display utility function tests
+- `test_service.py` - Service layer tests
+- `test_file_handler.py` - File handling tests
 
 ## Running Tests
 
@@ -20,7 +22,6 @@ python run_tests.py
 
 # Or directly with pytest
 python -m pytest test/ -v
-
 ```
 
 ### Run Specific Test Module
@@ -55,4 +56,16 @@ The test suite covers:
 - Search functionality with case-insensitive matching
 - User data isolation
 - Display utility functions
+- Service layer business logic
+- File handling operations
 - Error handling and edge cases
+
+## API Testing
+
+For API-specific tests, use the `test_api.py` script in the project root:
+
+```bash
+python test_api.py
+```
+
+This tests the FastAPI endpoints directly via HTTP requests.

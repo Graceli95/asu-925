@@ -224,6 +224,50 @@ Configure the following environment variables in a `.env` file:
 - **`API_LOG_LEVEL`** (optional): Logging level
   - Default: `info`
 
+## Testing
+
+The application includes comprehensive test coverage for all functionality.
+
+### Running Tests
+
+#### Unit Tests
+```bash
+# Run all unit tests
+python run_tests.py
+
+# Run with pytest
+python -m pytest test/ -v
+
+# Run specific test module
+python -m pytest test/test_song_crud.py -v
+```
+
+#### API Tests
+```bash
+# Test FastAPI endpoints
+python test_api.py
+```
+
+### Test Coverage
+
+The test suite covers:
+- Database connectivity and indexing
+- Song CRUD operations
+- Search functionality with case-insensitive matching
+- User data isolation
+- Service layer business logic
+- File handling operations
+- Error handling and edge cases
+- API endpoint functionality
+
+### Test Requirements
+
+- MongoDB instance running (for database tests)
+- All dependencies from `requirements-test.txt` installed
+- Environment variables configured
+
+For detailed test documentation, see `test/README.md`.
+
 ## Error Handling
 
 The API includes comprehensive error handling for:
