@@ -3,8 +3,10 @@ FastAPI application for Songs CRUD operations
 RESTful API for managing songs with MongoDB backend
 """
 
-from fastapi import FastAPI, HTTPException, Query, Path
+from fastapi import FastAPI, HTTPException, Query, Path, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from typing import Optional
 from datetime import datetime
 
@@ -39,6 +41,58 @@ app.add_middleware(
 # Initialize database and service
 db = SongsDatabase()
 song_service = SongService(db)
+
+
+# Custom Exception for Invalid Song ID Format
+class InvalidSongIdFormatException(Exception):
+    """Exception raised when song_id path parameter is not a valid integer"""
+    def __init__(self, provided_value: str):
+        self.provided_value = provided_value
+        self.message = (
+            f"Invalid song_id format. Expected an integer, but received '{provided_value}'. "
+            f"The song_id path parameter must be a valid integer (e.g., /songs/123). "
+            f"Please ensure you're providing a numeric value without quotes or special characters."
+        )
+        super().__init__(self.message)
+
+
+# Custom Exception Handler for Song ID Validation Errors
+@app.exception_handler(RequestValidationError)
+async def song_id_validation_exception_handler(request: Request, exc: RequestValidationError):
+    """
+    Custom exception handler that provides explicit details when song_id is a string instead of integer.
+    This handler intercepts FastAPI's validation errors and provides a more detailed response.
+    """
+    # Check if the error is related to song_id parameter in the path
+    for error in exc.errors():
+        if error.get("loc") == ("path", "song_id") and error.get("type") == "int_parsing":
+            # Get the invalid value that was provided
+            invalid_value = error.get("input", "unknown")
+            
+            return JSONResponse(
+                status_code=422,
+                content={
+                    "detail": {
+                        "error": "Invalid Song ID Format",
+                        "message": (
+                            f"The song_id path parameter must be a valid integer, "
+                            f"but received '{invalid_value}' which is a string."
+                        ),
+                        "provided_value": str(invalid_value),
+                        "expected_type": "integer",
+                        "actual_type": "string",
+                        "example": "Correct usage: GET /songs/123 (not /songs/abc)",
+                        "parameter_location": "path",
+                        "parameter_name": "song_id"
+                    }
+                }
+            )
+    
+    # If not a song_id error, return the default validation error response
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors()}
+    )
 
 
 @app.on_event("shutdown")
@@ -145,10 +199,11 @@ async def search_songs(
         message=result["message"]
     )
 
-
+# This endpoint is being used as an excample for int_parsing problems for an example, 
+# do not relate it back to the mongoDB
 @app.get("/songs/{song_id}", response_model=SongResponse)
 async def get_song(
-    song_id: str = Path(..., description="Song ID"),
+    song_id: int = Path(..., description="Song ID"),
     user: str = Query(..., description="Username for authorization")
 ):
     """Get a specific song by ID"""
