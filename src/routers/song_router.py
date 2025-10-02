@@ -202,4 +202,3 @@ async def play_song(
         raise HTTPException(status_code=404, detail=result["message"])
     
     return MessageResponse(message=result["message"], success=True)
-

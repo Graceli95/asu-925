@@ -1,1 +1,0 @@
-# Remove duplicate README and condense to one README following the fastapi impl

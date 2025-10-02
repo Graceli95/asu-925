@@ -133,7 +133,6 @@ class SongsDatabase:
             return True
         return False
     
-    
     def close(self):
         """Close database connection"""
         if hasattr(self, 'client'):

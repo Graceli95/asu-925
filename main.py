@@ -8,8 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from src.routers import songs_router
-from src.routers.users import router as users_router
+from src.routers import song_router, user_router
 from src.schemas import MessageResponse
 
 # Initialize FastAPI app
@@ -74,8 +73,8 @@ async def song_id_validation_exception_handler(request: Request, exc: RequestVal
     )
 
 # Include routers
-app.include_router(songs_router)
-app.include_router(users_router)
+app.include_router(song_router)
+app.include_router(user_router)
 
 @app.get("/", response_model=MessageResponse)
 async def root():

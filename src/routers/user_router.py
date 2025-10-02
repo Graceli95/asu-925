@@ -51,7 +51,6 @@ async def get_user(user_id: str = Path(..., description="User ID")):
         success=True
     )
 
-
 # Add more user endpoints here as needed:
 # - POST /users (create user)
 # - GET /users (list users)
@@ -59,4 +58,3 @@ async def get_user(user_id: str = Path(..., description="User ID")):
 # - DELETE /users/{user_id} (delete user)
 # - POST /users/{user_id}/login (user login)
 # - etc.
-

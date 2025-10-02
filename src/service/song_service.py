@@ -5,9 +5,8 @@ Handles business logic and coordinates between CLI and data layers
 
 from typing import List, Optional, Dict, Any
 from datetime import datetime
-from src.db.songs_db import SongsDatabase
+from src.db.song_db import SongsDatabase
 from src.model import Song
-from src.service.file_handler import SongFileHandler
 
 
 class SongService:
@@ -16,7 +15,6 @@ class SongService:
     def __init__(self, database: SongsDatabase):
         """Initialize the service with a database instance"""
         self.db = database
-        self.file_handler = SongFileHandler()
     
     def add_song(self, title: str, artist: str, user: str, genre: Optional[str] = None, year: Optional[int] = None) -> Dict[str, Any]:
         """
@@ -40,15 +38,8 @@ class SongService:
         created_song = self.db.add_song(title.strip(), artist.strip(), user, genre, year)
         
         if created_song:
-            # Try to create the song file in assets folder
-            file_created = self.file_handler.create_song_file(created_song)
-            
-            if file_created:
-                return {"success": True, "message": f"Song '{title}' by '{artist}' added successfully and saved to assets folder"}
-            else:
-                # File creation failed, rollback the database insertion
-                self.db.delete_song(str(created_song._id), user)
-                return {"success": False, "message": f"Failed to create song file. Database entry has been rolled back."}
+            # File creation is now a no-op (file_handler removed)
+            return {"success": True, "message": f"Song '{title}' by '{artist}' added successfully."}
         else:
             return {"success": False, "message": "Failed to add song"}
     
@@ -134,9 +125,7 @@ class SongService:
         success = self.db.delete_song(song_id, user)
         
         if success:
-            # Also delete the associated file
-            self.file_handler.delete_song_file(song)
-            
+            # File deletion is now a no-op (file_handler removed)
             return {
                 "success": True,
                 "message": f"Song '{song.title}' by '{song.artist}' deleted successfully",

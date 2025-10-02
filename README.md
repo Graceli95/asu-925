@@ -1,97 +1,99 @@
 # Songs API - FastAPI Application
 
-A RESTful API for managing songs with MongoDB backend. This application follows a layered architecture with service-based business logic for robust song management.
+## Overview
+A modern, layered RESTful API for managing songs with a MongoDB backend. This project demonstrates best practices in Python, FastAPI, Pydantic, and clean architecture.
 
-> **Note**: This application has been migrated from CLI to FastAPI. For CLI documentation, see the legacy `songs_cli.py` file.
+---
 
 ## Features
-
 - **RESTful API**: Full HTTP-based CRUD operations (GET, POST, PUT, DELETE)
-- **CRUD Operations**: Create, Read, Update, Delete songs
 - **User Tracking**: Each operation is associated with a specific user
-- **Search Functionality**: Search songs by title or artist with case-insensitive matching
-- **User Statistics**: View analytics about your song collection via API endpoint
-- **File Export**: Automatically creates .txt files in the assets folder for each song (format: "Artist - Title.txt")
-- **Interactive API Docs**: Built-in Swagger UI and ReDoc documentation
+- **Search Functionality**: Search songs by title or artist
+- **User Statistics**: Analytics endpoint for user song collections
+- **File Export**: Creates .txt files for each song in the assets folder
+- **Interactive API Docs**: Swagger UI and ReDoc
 - **Layered Architecture**: Clean separation between API, service, database, and model layers
 - **Input Validation**: Pydantic schemas for request/response validation
 - **CORS Enabled**: Ready for frontend integration
 
+---
+
 ## Setup
 
-1. **Install Dependencies**:
+### Prerequisites
+- Python 3.8+
+- MongoDB instance (local or Atlas)
+- Virtual environment (recommended)
+
+### Installation
+1. Clone the repository and navigate to the project directory
+2. Create a virtual environment:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+3. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
-
-2. **Configure Environment**:
-   Create a `.env` file in the project root with your MongoDB configuration:
+4. Create a `.env` file in the root directory with your MongoDB connection string:
    ```
-   project_db_url=mongodb://localhost:27017/songs
+   project_db_url=mongodb+srv://your-connection-string
    project_db_name=songs
    ```
 
-3. **Run the API Server**:
-   ```bash
-   python start_api.py
-   ```
-   
-   Or directly with uvicorn:
-   ```bash
-   uvicorn main:app --reload
-   ```
+### Running the API
+Start the FastAPI server:
+```bash
+python main.py
+```
+Or using uvicorn directly:
+```bash
+uvicorn main:app --reload
+```
+The API will be available at `http://localhost:8000`
 
-4. **Access the API**:
-   - API Base URL: `http://localhost:8000`
-   - Interactive Docs (Swagger): `http://localhost:8000/docs`
-   - Alternative Docs (ReDoc): `http://localhost:8000/redoc`
+---
 
 ## API Usage
 
 ### Quick Start with cURL
-
-**Create a song:**
-```bash
-curl -X POST "http://localhost:8000/songs" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Bohemian Rhapsody",
-    "artist": "Queen",
-    "user": "john_doe",
-    "genre": "Rock",
-    "year": 1975
-  }'
-```
-
-**List songs for a user:**
-```bash
-curl "http://localhost:8000/songs?user=john_doe"
-```
-
-**Search songs:**
-```bash
-curl "http://localhost:8000/songs/search?query=Bohemian&user=john_doe"
-```
-
-**Update a song:**
-```bash
-curl -X PUT "http://localhost:8000/songs/{song_id}?user=john_doe" \
-  -H "Content-Type: application/json" \
-  -d '{"year": 1976}'
-```
-
-**Delete a song:**
-```bash
-curl -X DELETE "http://localhost:8000/songs/{song_id}?user=john_doe"
-```
-
-**Get user statistics:**
-```bash
-curl "http://localhost:8000/users/john_doe/stats"
-```
+- **Create a song:**
+  ```bash
+  curl -X POST "http://localhost:8000/songs" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "title": "Bohemian Rhapsody",
+      "artist": "Queen",
+      "user": "john_doe",
+      "genre": "Rock",
+      "year": 1975
+    }'
+  ```
+- **List songs for a user:**
+  ```bash
+  curl "http://localhost:8000/songs?user=john_doe"
+  ```
+- **Search songs:**
+  ```bash
+  curl "http://localhost:8000/songs/search?query=Bohemian&user=john_doe"
+  ```
+- **Update a song:**
+  ```bash
+  curl -X PUT "http://localhost:8000/songs/{song_id}?user=john_doe" \
+    -H "Content-Type: application/json" \
+    -d '{"year": 1976}'
+  ```
+- **Delete a song:**
+  ```bash
+  curl -X DELETE "http://localhost:8000/songs/{song_id}?user=john_doe"
+  ```
+- **Get user statistics:**
+  ```bash
+  curl "http://localhost:8000/users/john_doe/stats"
+  ```
 
 ### API Endpoints
-
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/` | Root endpoint |
@@ -106,72 +108,109 @@ curl "http://localhost:8000/users/john_doe/stats"
 
 For detailed API documentation with request/response schemas, visit `http://localhost:8000/docs` after starting the server.
 
-## Database Schema
+### Error Responses
+- **400 Bad Request**
+  ```json
+  { "detail": "Title cannot be empty" }
+  ```
+- **404 Not Found**
+  ```json
+  { "detail": "Song not found or you don't have permission to access it" }
+  ```
 
-**Database Name**: Configurable via `project_db_name` environment variable (default: `songs`)
+---
 
-### Songs Collection
-- `_id`: MongoDB ObjectId
-- `title`: Song title
-- `artist`: Artist name
-- `user`: Username who added the song
-- `genre`: Song genre (optional)
-- `year`: Release year (optional)
-- `created_at`: Timestamp when song was added
-- `updated_at`: Timestamp when song was last updated
+## Layered Architecture (n-Layered, RESTful)
 
-## Business Rules
-
-### Song Validation
-- **Title**: Required, cannot be empty
-- **Artist**: Required, cannot be empty
-- **Genre**: Optional, any string value
-- **Year**: Optional, must not be in the future (any year ≤ current year is valid)
-
-### User Data Isolation
-- Users can only view, modify, and delete their own songs
-- Search operations are user-scoped by default (with option for global search)
-
-## Environment Variables
-
-The application uses the following environment variables:
-
-- **`project_db_url`** (required): MongoDB connection string
-  - Example: `mongodb://localhost:27017/songs`
-- **`project_db_name`** (optional): Database name to use
-  - Default: `songs`
-  - Example: `my_songs_db`
-
-## Architecture
-
-The application follows a clean layered architecture:
+This project uses a clean, n-layered architecture for maintainability and scalability:
 
 ```
-API Layer (main.py) ← FastAPI endpoints
+API Layer (main.py, src/routers/) ← FastAPI endpoints
     ↓
-Schemas Layer (src/schemas.py) ← Pydantic validation
+Dependency Layer (src/dependencies.py) ← Dependency injection
     ↓
-Service Layer (src/service/song_service.py) ← Business Logic
+Service Layer (src/service/) ← Business Logic
     ↓
-Database Layer (src/db/songs_db.py)
+Database Layer (src/db/) ← Data access
     ↓
-Model Layer (src/model/song.py)
+Model Layer (src/model/) ← Pydantic models/entities
+    ↓
+Schema Layer (src/schemas.py) ← Pydantic request/response schemas
 ```
+
+- **API Layer:** Handles HTTP requests, validation, and routing.
+- **Dependency Layer:** Provides singleton database/service instances to routers.
+- **Service Layer:** Contains business logic and orchestration.
+- **Database Layer:** Handles all direct database operations.
+- **Model Layer:** Defines data structures and validation logic.
+- **Schema Layer:** Defines request/response schemas for API endpoints.
+
+---
+
+## Field Aliasing (Flexible API Input)
+
+The Song model supports field aliases for flexible API input. You can use either the primary field name or its alias when creating/updating songs.
+
+| Field      | Primary Name | Alias         |
+|------------|--------------|---------------|
+| title      | `title`      | `song_title`  |
+| artist     | `artist`     | `artist_name` |
+| user       | `user`       | `username`    |
+| genre      | `genre`      | `music_genre` |
+| year       | `year`       | `release_year`|
+| created_at | `created_at` | `date_created`|
+| updated_at | `updated_at` | `date_updated`|
+| id         | `id`         | `song_id`     |
+
+**Example:**
+```json
+{
+  "song_title": "Bohemian Rhapsody",
+  "artist_name": "Queen",
+  "username": "john_doe",
+  "music_genre": "Rock",
+  "release_year": 1975
+}
+```
+
+---
+
+## Pydantic & Validation Best Practices
+- All models use Pydantic v2+ for validation and serialization
+- Field constraints (min/max length, regex, etc.) are enforced
+- Custom validators for business rules (e.g., year not in future)
+- Field aliases for flexible input
+- Automatic OpenAPI/Swagger documentation
+- See `src/model/song.py` for implementation details
+
+---
+
+## Testing
+To run the tests:
+```bash
+python run_tests.py
+```
+
+---
 
 ## Project Structure
-
 ```
 ├── main.py                   # FastAPI application entry point
 ├── start_api.py              # API server startup script
-├── API_README.md             # Detailed API documentation
 ├── assets/                   # Exported song files (.txt format)
 ├── src/
+│   ├── dependencies.py       # Dependency injection
 │   ├── schemas.py            # Pydantic schemas for validation
 │   ├── db/
 │   │   └── songs_db.py       # Database layer
 │   ├── model/
 │   │   ├── __init__.py
-│   │   └── song.py           # Song model
+│   │   ├── song.py           # Song model
+│   │   └── user.py           # User model
+│   ├── routers/
+│   │   ├── __init__.py
+│   │   ├── songs.py          # Song routes
+│   │   └── users.py          # User routes
 │   └── service/
 │       ├── __init__.py
 │       ├── song_service.py   # Business logic
@@ -184,26 +223,18 @@ Model Layer (src/model/song.py)
 │   ├── test_user_isolation.py # User isolation tests
 │   ├── test_display.py       # Display function tests
 │   ├── test_service.py       # Service layer tests
-│   └── README.md             # Test documentation
 ├── requirements.txt          # Dependencies
-├── requirements-test.txt     # Test dependencies
 └── README.md                 # This file
-
-Legacy Files (deprecated):
-├── songs_cli.py              # Old CLI application
 ```
 
-## Requirements
+---
 
-- Python 3.7+
-- MongoDB server
-- Dependencies listed in `requirements.txt`
+## Contribution & Legacy Notes
+- This project was migrated from a CLI-based application (`songs_cli.py`) to a modern FastAPI RESTful API.
+- All legacy files are retained for reference but are no longer maintained.
+- Please follow the layered architecture and naming conventions for all new code.
 
-## Error Handling
+---
 
-The application includes comprehensive error handling for:
-- Database connection issues
-- Invalid song IDs
-- Duplicate songs
-- Missing required parameters
-- User confirmation for destructive operations
+## License
+MIT License

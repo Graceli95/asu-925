@@ -3,8 +3,8 @@ Routers package for FastAPI application
 Contains route handlers organized by resource/model
 """
 
-from .songs import router as songs_router
-from .users import router as users_router
+from .song_router import router as song_router
+from .user_router import router as user_router
 
-__all__ = ['songs_router', 'users_router']
+__all__ = ['song_router', 'user_router']
 

@@ -1,8 +1,0 @@
-CRUD operations
-create, read, update, delete songs
-
-When I use the app, I want to be able to specify "who" i am (username)
-and then add a song, or list all songs. Or, if I request a specific song, or 
-make a search of my songs, I also want to track this in a "history".
-
-For instance, "Ted" played "Song 1". 
