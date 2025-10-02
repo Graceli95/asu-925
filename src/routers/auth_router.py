@@ -4,7 +4,7 @@ Handles user registration, login, and token management
 """
 
 from datetime import timedelta
-from fastapi import APIRouter, HTTPException, status, Depends, Request
+from fastapi import APIRouter, HTTPException, status, Depends, Request, Response
 from fastapi.security import OAuth2PasswordRequestForm
 
 from src.auth import (
@@ -13,6 +13,7 @@ from src.auth import (
     get_current_user,
     get_current_user_from_request,
     get_password_hash,
+    verify_token,
     ACCESS_TOKEN_EXPIRE_MINUTES
 )
 from src.schemas import (
@@ -20,7 +21,8 @@ from src.schemas import (
     UserLogin, 
     Token, 
     UserResponse, 
-    MessageResponse
+    MessageResponse,
+    RefreshTokenRequest
 )
 from src.model import User
 from src.dependencies import get_database
@@ -94,6 +96,7 @@ async def register_user(
 @router.post("/login", response_model=Token)
 async def login_user(
     user_credentials: UserLogin,
+    response: Response,
     db: SongsDatabase = Depends(get_database)
 ):
     """
@@ -136,19 +139,52 @@ async def login_user(
         expires_delta=access_token_expires
     )
     
+    # Create refresh token (longer expiration)
+    refresh_token_expires = timedelta(days=7)  # 7 days
+    refresh_token = create_access_token(
+        data={
+            "sub": user.username, 
+            "user_id": str(user.id), 
+            "type": "refresh",
+            "version": user.refresh_token_version
+        },
+        expires_delta=refresh_token_expires
+    )
+    
     # Update last login
     user.update_last_login()
     db.update_user(user)
     
+    # Set HTTP-only cookies for NextJS middleware
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        httponly=True,
+        secure=False,  # Set to True in production with HTTPS
+        samesite="strict"
+    )
+    
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        max_age=7 * 24 * 60 * 60,  # 7 days
+        httponly=True,
+        secure=False,  # Set to True in production with HTTPS
+        samesite="strict"
+    )
+    
     return Token(
         access_token=access_token,
         token_type="bearer",
-        expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        refresh_token=refresh_token
     )
 
 
 @router.post("/login-form", response_model=Token)
 async def login_user_form(
+    response: Response,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: SongsDatabase = Depends(get_database)
 ):
@@ -192,15 +228,149 @@ async def login_user_form(
         expires_delta=access_token_expires
     )
     
+    # Create refresh token (longer expiration)
+    refresh_token_expires = timedelta(days=7)  # 7 days
+    refresh_token = create_access_token(
+        data={
+            "sub": user.username, 
+            "user_id": str(user.id), 
+            "type": "refresh",
+            "version": user.refresh_token_version
+        },
+        expires_delta=refresh_token_expires
+    )
+    
     # Update last login
     user.update_last_login()
     db.update_user(user)
     
+    # Set HTTP-only cookies for NextJS middleware
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        httponly=True,
+        secure=False,  # Set to True in production with HTTPS
+        samesite="strict"
+    )
+    
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        max_age=7 * 24 * 60 * 60,  # 7 days
+        httponly=True,
+        secure=False,  # Set to True in production with HTTPS
+        samesite="strict"
+    )
+    
     return Token(
         access_token=access_token,
         token_type="bearer",
-        expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        refresh_token=refresh_token
     )
+
+
+@router.post("/refresh", response_model=Token)
+async def refresh_token(
+    refresh_request: RefreshTokenRequest,
+    response: Response,
+    db: SongsDatabase = Depends(get_database)
+):
+    """
+    Refresh access token using refresh token
+    
+    Args:
+        refresh_request: Refresh token request containing refresh token
+        response: FastAPI response object for setting cookies
+        db: Database dependency
+        
+    Returns:
+        Token: New JWT access token
+        
+    Raises:
+        HTTPException: If refresh token is invalid or expired
+    """
+    try:
+        # Validate refresh token
+        token_data = verify_token(refresh_request.refresh_token)
+        
+        # Check if it's a refresh token
+        if not hasattr(token_data, 'type') or token_data.type != 'refresh':
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token type"
+            )
+        
+        # Get user
+        user = db.get_user_by_username(token_data.username)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found"
+            )
+        
+        # Check if refresh token version matches current version (token rotation security)
+        if token_data.version != user.refresh_token_version:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Refresh token has been revoked"
+            )
+        
+        # Increment refresh token version (invalidates all previous refresh tokens)
+        user.refresh_token_version += 1
+        db.update_user(user)
+        
+        # Create new access token
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": user.username, "user_id": str(user.id)},
+            expires_delta=access_token_expires
+        )
+        
+        # Create new refresh token with updated version
+        refresh_token_expires = timedelta(days=7)  # 7 days
+        refresh_token = create_access_token(
+            data={
+                "sub": user.username, 
+                "user_id": str(user.id), 
+                "type": "refresh",
+                "version": user.refresh_token_version
+            },
+            expires_delta=refresh_token_expires
+        )
+        
+        # Set HTTP-only cookies for NextJS middleware
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            httponly=True,
+            secure=False,  # Set to True in production with HTTPS
+            samesite="strict"
+        )
+        
+        response.set_cookie(
+            key="refresh_token",
+            value=refresh_token,
+            max_age=7 * 24 * 60 * 60,  # 7 days
+            httponly=True,
+            secure=False,  # Set to True in production with HTTPS
+            samesite="strict"
+        )
+        
+        return Token(
+            access_token=access_token,
+            token_type="bearer",
+            expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            refresh_token=refresh_token
+        )
+        
+    except HTTPException:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token"
+        )
 
 
 @router.get("/me", response_model=UserResponse)

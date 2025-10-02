@@ -155,12 +155,20 @@ class Token(BaseModel):
     access_token: str = Field(..., description="JWT access token")
     token_type: str = Field(default="bearer", description="Token type")
     expires_in: int = Field(..., description="Token expiration time in seconds")
+    refresh_token: Optional[str] = Field(None, description="Refresh token for obtaining new access tokens")
+
+
+class RefreshTokenRequest(BaseModel):
+    """Schema for refresh token request"""
+    refresh_token: str = Field(..., description="Refresh token to exchange for new access token")
 
 
 class TokenData(BaseModel):
     """Schema for JWT token payload data"""
     username: Optional[str] = None
     user_id: Optional[str] = None
+    type: Optional[str] = None  # For distinguishing access vs refresh tokens
+    version: Optional[int] = None  # For refresh token versioning
 
 
 class UserResponse(BaseModel):

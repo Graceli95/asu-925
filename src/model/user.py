@@ -99,6 +99,12 @@ class User(BaseModel):
         validation_alias="last_login_date"
     )
     
+    refresh_token_version: int = Field(
+        default=0,
+        description="Version number for refresh token rotation",
+        validation_alias="token_version"
+    )
+    
     is_active: bool = Field(
         default=True,
         description="Whether user account is active"
