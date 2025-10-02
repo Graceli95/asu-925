@@ -1,0 +1,46 @@
+---
+// This rule enforces that each file should only contain functionality related to a single model.
+// If a file needs to interact with multiple models, it must do so via dependency injection from other layers (e.g., services, routers).
+// For example, a song_service should only operate on Song model logic, and if it needs to interact with User, it should receive a user_service or user_repository as a dependency, not import or implement user logic directly.
+// This keeps model-related logic encapsulated and promotes separation of concerns.
+rule: |
+  For any file in the codebase, ensure that:
+    - The file only contains logic related to a single model (e.g., Song, User).
+    - If the file needs to interact with another model, it must do so by injecting a dependency (such as a service or repository) from another layer, not by importing or implementing logic for the other model directly.
+    - For example, song_service.py should only contain logic for Song. If it needs user information, it should accept a user_service or user_repository as a dependency, rather than importing User or user_service directly.
+    - Routers, services, and repositories should be split by model (e.g., user_router.py, song_router.py, user_service.py, song_service.py).
+    - Any violation (e.g., importing multiple models or implementing logic for multiple models in a single file) should be flagged.
+    - This rule applies to all files except for explicit composition/integration points (such as main.py or dependency injection containers), which are allowed to wire together multiple services or models.
+examples:
+  valid:
+    - file: src/service/song_service.py
+      content: |
+        from src.model.song import Song
+        class SongService:
+            def __init__(self, song_repository):
+                self.song_repository = song_repository
+            # Only Song logic here
+    - file: src/router/user_router.py
+      content: |
+        from src.service.user_service import UserService
+        def get_user_router(user_service: UserService):
+            # Only User routing logic here
+  invalid:
+    - file: src/service/song_service.py
+      content: |
+        from src.model.song import Song
+        from src.model.user import User  # <-- Violation: importing multiple models
+        class SongService:
+            def __init__(self, song_repository, user_repository):
+                self.song_repository = song_repository
+                self.user_repository = user_repository
+            # Logic for both Song and User here
+    - file: src/service/multi_model_service.py
+      content: |
+        from src.model.song import Song
+        from src.model.user import User
+        class MultiModelService:
+            # Logic for both Song and User here
+
+alwaysApply: true
+---

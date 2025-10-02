@@ -1,0 +1,10 @@
+---
+rule("log-my-messages") {
+  description = "Always log the user's exact messages to chat_history_summary.md"
+  onMessage(userMessage) {
+    appendToFile("chat_history_summary.md", userMessage + "\n")
+  }
+}
+
+alwaysApply: true
+---
