@@ -4,7 +4,7 @@ Provides database and service instances for route handlers
 """
 
 from typing import Generator
-from src.db.songs_db import SongsDatabase
+from src.db.song_db import SongsDatabase
 from src.service.song_service import SongService
 
 # Singleton database instance
