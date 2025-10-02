@@ -14,7 +14,7 @@ from pymongo.errors import ServerSelectionTimeoutError, DuplicateKeyError
 from bson import ObjectId
 
 # Import models
-from src.model import Song
+from src.model import Song, User
 
 # Load environment variables
 load_dotenv()
@@ -33,11 +33,16 @@ class SongsDatabase:
             self.client = MongoClient(self.db_url)
             self.db = self.client[self.db_name]
             self.songs = self.db.songs
+            self.users = self.db.users
             
-            # Create indexes
+            # Create indexes for songs
             self.songs.create_index("title")
             self.songs.create_index("artist")
             self.songs.create_index("user")
+            
+            # Create indexes for users
+            self.users.create_index("username", unique=True)
+            self.users.create_index("email", unique=True)
             
         except ServerSelectionTimeoutError:
             print("Error: Could not connect to MongoDB. Please check your connection string.")
@@ -132,6 +137,71 @@ class SongsDatabase:
         if song:
             return True
         return False
+    
+    # User operations
+    def add_user(self, user: User) -> Optional[User]:
+        """Add a new user to the database"""
+        try:
+            user_data = user.to_dict()
+            result = self.users.insert_one(user_data)
+            if result.inserted_id:
+                user.id = result.inserted_id
+                return user
+            return None
+        except DuplicateKeyError:
+            return None
+        except Exception:
+            return None
+    
+    def get_user_by_id(self, user_id: str) -> Optional[User]:
+        """Get a user by ID"""
+        try:
+            user_data = self.users.find_one({"_id": ObjectId(user_id)})
+            if user_data:
+                return User.from_dict(user_data)
+            return None
+        except Exception:
+            return None
+    
+    def get_user_by_username(self, username: str) -> Optional[User]:
+        """Get a user by username"""
+        try:
+            user_data = self.users.find_one({"username": username})
+            if user_data:
+                return User.from_dict(user_data)
+            return None
+        except Exception:
+            return None
+    
+    def get_user_by_email(self, email: str) -> Optional[User]:
+        """Get a user by email"""
+        try:
+            user_data = self.users.find_one({"email": email})
+            if user_data:
+                return User.from_dict(user_data)
+            return None
+        except Exception:
+            return None
+    
+    def update_user(self, user: User) -> bool:
+        """Update a user in the database"""
+        try:
+            user_data = user.to_dict()
+            result = self.users.update_one(
+                {"_id": user.id},
+                {"$set": user_data}
+            )
+            return result.modified_count > 0
+        except Exception:
+            return False
+    
+    def delete_user(self, user_id: str) -> bool:
+        """Delete a user from the database"""
+        try:
+            result = self.users.delete_one({"_id": ObjectId(user_id)})
+            return result.deleted_count > 0
+        except Exception:
+            return False
     
     def close(self):
         """Close database connection"""
