@@ -1,15 +1,16 @@
 """
 Song model for the Songs API application
-Using Pydantic BaseModel for validation and serialization
+Using Beanie ODM Document for MongoDB integration with Pydantic validation
 """
 
 from datetime import datetime
 from typing import Optional, Dict, Any
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+from beanie import Document
+from pydantic import Field, field_validator, ConfigDict
 from bson import ObjectId
 
 
-class Song(BaseModel):
+class Song(Document):
     """
     Song entity model with Pydantic validation
     
@@ -24,12 +25,8 @@ class Song(BaseModel):
         _id: MongoDB ObjectId
     """
     
-    # Configure Pydantic model
-    # ConfigDict is a utility from Pydantic v2+ that allows you to configure model behavior.
-    # It replaces the old inner 'class Config' from Pydantic v1.
-    # Here, it is used to set options such as allowing arbitrary types (like ObjectId),
-    # enabling population by field name or alias, stripping whitespace from strings,
-    # validating assignments, and customizing JSON encoding for ObjectId and datetime.
+    # Configure Beanie Document and Pydantic model
+    # Beanie Document inherits from Pydantic BaseModel with MongoDB-specific features
     model_config = ConfigDict(
         arbitrary_types_allowed=True,  # Allow ObjectId type
         populate_by_name=True,  # Allow population by field name or alias
@@ -40,6 +37,17 @@ class Song(BaseModel):
             datetime: lambda v: v.isoformat()  # ISO format for datetime
         }
     )
+    
+    # Beanie-specific configuration
+    class Settings:
+        name = "songs"  # MongoDB collection name
+        indexes = [
+            "title",  # Index on title for faster searches
+            "artist",  # Index on artist for faster searches
+            "user",  # Index on user for user-specific queries
+            [("user", 1), ("title", 1)],  # Compound index for user + title
+            [("user", 1), ("artist", 1)],  # Compound index for user + artist
+        ]
     
     # Fields with validation and aliases
     title: str = Field(
@@ -101,11 +109,8 @@ class Song(BaseModel):
         validation_alias="date_updated"  # Alias for input: "date_updated" or "updated_at"
     )
     
-    id: Optional[ObjectId] = Field(
-        default=None,
-        alias="_id",  # Serialization alias: stores as "_id" in MongoDB
-        description="MongoDB ObjectId"
-    )
+    # Beanie Document automatically provides 'id' field as ObjectId
+    # No need to define it explicitly - Beanie handles MongoDB _id automatically
     
     # Validators
     @field_validator('title', 'artist', 'user')
@@ -132,52 +137,9 @@ class Song(BaseModel):
             raise ValueError(f'Year cannot be in the future (current year: {datetime.now().year})')
         return v
     
-    # Methods
-    def to_dict(self) -> Dict[str, Any]:
-        """
-        Convert song to dictionary for database storage
-        
-        Returns:
-            Dictionary representation suitable for MongoDB
-        """
-        data = {
-            "title": self.title,
-            "artist": self.artist,
-            "user": self.user,
-            "genre": self.genre,
-            "year": self.year,
-            "created_at": self.created_at
-        }
-        
-        if self.updated_at:
-            data["updated_at"] = self.updated_at
-            
-        if self.id:
-            data["_id"] = self.id
-            
-        return data
-    
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'Song':
-        """
-        Create Song instance from dictionary (e.g., from database)
-        
-        Args:
-            data: Dictionary containing song data
-            
-        Returns:
-            Song instance
-        """
-        return cls(
-            title=data.get("title", ""),
-            artist=data.get("artist", ""),
-            user=data.get("user", ""),
-            genre=data.get("genre"),
-            year=data.get("year"),
-            created_at=data.get("created_at", datetime.now()),
-            updated_at=data.get("updated_at"),
-            id=data.get("_id")  # MongoDB uses _id, map to our 'id' field
-        )
+    # Beanie Document Methods
+    # Beanie automatically handles to_dict() and from_dict() through Pydantic
+    # No need to implement these manually
     
     def update_fields(self, **kwargs) -> None:
         """

@@ -1,11 +1,12 @@
 """
 User model for the Songs API application
-Using Pydantic BaseModel for validation and serialization
+Using Beanie ODM Document for MongoDB integration with Pydantic validation
 """
 
 from datetime import datetime
 from typing import Optional, Dict, Any
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+from beanie import Document
+from pydantic import Field, field_validator, ConfigDict
 from bson import ObjectId
 from passlib.context import CryptContext
 
@@ -13,7 +14,7 @@ from passlib.context import CryptContext
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-class User(BaseModel):
+class User(Document):
     """
     User entity model with Pydantic validation and password hashing
     
@@ -30,7 +31,7 @@ class User(BaseModel):
         id: MongoDB ObjectId
     """
     
-    # Configure Pydantic model
+    # Configure Beanie Document and Pydantic model
     model_config = ConfigDict(
         arbitrary_types_allowed=True,  # Allow ObjectId type
         populate_by_name=True,  # Allow population by field name or alias
@@ -41,6 +42,16 @@ class User(BaseModel):
             datetime: lambda v: v.isoformat()  # ISO format for datetime
         }
     )
+    
+    # Beanie-specific configuration
+    class Settings:
+        name = "users"  # MongoDB collection name
+        indexes = [
+            "username",  # Index on username for faster lookups
+            "email",  # Index on email for faster lookups
+            [("username", 1)],  # Unique index on username
+            [("email", 1)],  # Unique index on email
+        ]
     
     # Fields with validation
     username: str = Field(
@@ -110,11 +121,8 @@ class User(BaseModel):
         description="Whether user account is active"
     )
     
-    id: Optional[ObjectId] = Field(
-        default=None,
-        alias="_id",  # Serialization alias: stores as "_id" in MongoDB
-        description="MongoDB ObjectId"
-    )
+    # Beanie Document automatically provides 'id' field as ObjectId
+    # No need to define it explicitly - Beanie handles MongoDB _id automatically
     
     # Validators
     @field_validator('username', 'email')
@@ -151,44 +159,9 @@ class User(BaseModel):
         """Verify a password against the stored hash"""
         return pwd_context.verify(password, self.password_hash)
     
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert user to dictionary for database storage"""
-        data = {
-            "username": self.username,
-            "email": self.email,
-            "password_hash": self.password_hash,
-            "first_name": self.first_name,
-            "last_name": self.last_name,
-            "created_at": self.created_at,
-            "is_active": self.is_active
-        }
-        
-        if self.updated_at:
-            data["updated_at"] = self.updated_at
-        
-        if self.last_login:
-            data["last_login"] = self.last_login
-            
-        if self.id:
-            data["_id"] = self.id
-            
-        return data
-    
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'User':
-        """Create User instance from dictionary (e.g., from database)"""
-        return cls(
-            username=data.get("username", ""),
-            email=data.get("email", ""),
-            password_hash=data.get("password_hash", ""),
-            first_name=data.get("first_name"),
-            last_name=data.get("last_name"),
-            created_at=data.get("created_at", datetime.now()),
-            updated_at=data.get("updated_at"),
-            last_login=data.get("last_login"),
-            is_active=data.get("is_active", True),
-            id=data.get("_id")  # MongoDB uses _id, map to our 'id' field
-        )
+    # Beanie Document Methods
+    # Beanie automatically handles to_dict() and from_dict() through Pydantic
+    # No need to implement these manually
     
     def update(self, **kwargs) -> None:
         """Update user fields and set updated_at timestamp"""
