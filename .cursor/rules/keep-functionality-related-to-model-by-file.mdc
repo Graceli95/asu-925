@@ -1,0 +1,43 @@
+---
+# Rule: Enforce Layered Architecture Naming Conventions
+
+## Applies To
+- All Python projects in this workspace
+
+## Rule
+- All files and folders must follow the layered architecture naming convention
+
+### Folder Names
+- model/ — for all domain/entity models
+- service/ — for business logic/services
+- db/ — for data access/database logic
+- routers/ — for FastAPI routers (API endpoints)
+
+### File Names
+- Each file must be named as:  
+  {entity/layer_name}_{layer}.py
+
+#### Examples:
+- Model: model/song.py (not `models.py` or `SongModel.py`)
+- Service: service/song_service.py
+- Database: db/song_db.py
+- Router: routers/song_router.py
+
+### Additional Rules
+- Only one entity per file (e.g., `song.py` for the Song model, not `song_and_album.py`)
+- Plural folder names are not allowed (use `model/`, not `models/`)
+- No camelCase or PascalCase in file names; use snake_case only
+- No generic names like `utils.py` or `helpers.py` in these core folders
+
+## Rationale
+- Ensures consistency and clarity across all projects
+- Makes it easy to locate files by entity and layer
+- Supports scalable, maintainable, and testable codebases
+
+## Enforcement
+- All new files and folders must follow this convention.
+- Code reviews should reject PRs that do not comply.
+- Refactor legacy code to match this structure when touched.
+
+alwaysApply: true
+---
