@@ -26,7 +26,7 @@ from src.schemas import (
 )
 from src.model import User
 from src.dependencies import get_database
-from src.db.song_db import SongsDatabase
+from src.db.song_db import SongDatabase
 
 # Create router
 router = APIRouter(
@@ -39,7 +39,7 @@ router = APIRouter(
 @router.post("/register", response_model=UserResponse, status_code=201)
 async def register_user(
     user_data: UserRegister,
-    db: SongsDatabase = Depends(get_database)
+    db: SongDatabase = Depends(get_database)
 ):
     """
     Register a new user
@@ -97,7 +97,7 @@ async def register_user(
 async def login_user(
     user_credentials: UserLogin,
     response: Response,
-    db: SongsDatabase = Depends(get_database)
+    db: SongDatabase = Depends(get_database)
 ):
     """
     Authenticate user and return JWT token
@@ -186,7 +186,7 @@ async def login_user(
 async def login_user_form(
     response: Response,
     form_data: OAuth2PasswordRequestForm = Depends(),
-    db: SongsDatabase = Depends(get_database)
+    db: SongDatabase = Depends(get_database)
 ):
     """
     Authenticate user using OAuth2 form data (for Swagger UI compatibility)
@@ -275,7 +275,7 @@ async def login_user_form(
 async def refresh_token(
     refresh_request: RefreshTokenRequest,
     response: Response,
-    db: SongsDatabase = Depends(get_database)
+    db: SongDatabase = Depends(get_database)
 ):
     """
     Refresh access token using refresh token
@@ -376,7 +376,7 @@ async def refresh_token(
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_info(
     current_user = Depends(get_current_user),
-    db: SongsDatabase = Depends(get_database)
+    db: SongDatabase = Depends(get_database)
 ):
     """
     Get current user information

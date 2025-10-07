@@ -1,6 +1,6 @@
 """
 FastAPI application for Songs CRUD operations
-RESTful API for managing songs with MongoDB backend using Beanie ODM
+RESTful API for managing songs with MongoDB backend
 """
 
 from fastapi import FastAPI, Request
@@ -12,12 +12,11 @@ from fastapi.security import HTTPBearer
 from src.routers import song_router, user_router, auth_router
 from src.schemas import MessageResponse
 from src.middleware import RequestLoggingMiddleware, CORSSecurityMiddleware
-from src.db.beanie_config import init_database
 
 # Initialize FastAPI app
 app = FastAPI(
     title="Songs API",
-    description="A RESTful API for managing songs with MongoDB backend using Beanie ODM",
+    description="A RESTful API for managing songs with MongoDB backend",
     version="1.0.0",
     # Add OpenAPI security configuration
     openapi_tags=[
@@ -88,17 +87,6 @@ def custom_openapi():
     return app.openapi_schema
 
 app.openapi = custom_openapi
-
-# Startup event to initialize Beanie database
-@app.on_event("startup")
-async def startup_event():
-    """Initialize Beanie database on startup"""
-    try:
-        await init_database()
-        print("🚀 FastAPI application started with Beanie ODM")
-    except Exception as e:
-        print(f"❌ Failed to initialize Beanie database: {e}")
-        raise e
 
 # Custom Exception for Invalid Song ID Format
 class InvalidSongIdFormatException(Exception):

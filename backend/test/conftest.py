@@ -11,7 +11,7 @@ from pymongo.errors import ServerSelectionTimeoutError
 # Add the parent directory to Python path to import our modules
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from db.songs_db import SongsDatabase
+from src.db.song_db import SongDatabase
 from service import SongService
 
 # Load environment variables
@@ -29,7 +29,7 @@ def test_db():
     
     # Initialize test database
     try:
-        db = SongsDatabase()
+        db = SongDatabase()
         
         # Clear ALL test data to ensure clean state
         db.songs.delete_many({})
