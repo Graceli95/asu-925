@@ -1,68 +1,167 @@
 """
 User model for the Songs API application
+Using Beanie ODM Document for MongoDB integration with Pydantic validation
 """
 
 from datetime import datetime
 from typing import Optional, Dict, Any
-from dataclasses import dataclass, field
+from beanie import Document
+from pydantic import Field, field_validator, ConfigDict
 from bson import ObjectId
+from passlib.context import CryptContext
 
 
-# The @dataclass decorator automatically generates special methods for the class,
-# such as __init__, __repr__, __eq__, and others, based on the class attributes.
-# This simplifies the creation of classes that are primarily used to store data.
-@dataclass
-# This code defines a User data model using Python's dataclass.
-# The User class represents a user entity with fields for username, email, optional first and last names,
-# timestamps for creation, update, and last login, an active status flag, and an optional database ID.
-class User:
-    """User entity model"""
-    username: str
-    email: str
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    created_at: datetime = field(default_factory=datetime.now)
-    updated_at: Optional[datetime] = None
-    last_login: Optional[datetime] = None
-    is_active: bool = True
-    _id: Optional[ObjectId] = None
+# Password hashing context
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+class User(Document):
+    """
+    User entity model with Pydantic validation and password hashing
     
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert user to dictionary for database storage"""
-        data = {
-            "username": self.username,
-            "email": self.email,
-            "first_name": self.first_name,
-            "last_name": self.last_name,
-            "created_at": self.created_at,
-            "is_active": self.is_active
+    Attributes:
+        username: Unique username (required)
+        email: User email address (required)
+        password_hash: Hashed password (required)
+        first_name: User's first name (optional)
+        last_name: User's last name (optional)
+        created_at: Timestamp when user was created
+        updated_at: Timestamp when user was last updated
+        last_login: Timestamp of last login
+        is_active: Whether user account is active
+        id: MongoDB ObjectId
+    """
+    
+    # Configure Beanie Document and Pydantic model
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,  # Allow ObjectId type
+        populate_by_name=True,  # Allow population by field name or alias
+        str_strip_whitespace=True,  # Strip whitespace from strings
+        validate_assignment=True,  # Validate on attribute assignment
+        json_encoders={
+            ObjectId: str,  # Convert ObjectId to string in JSON
+            datetime: lambda v: v.isoformat()  # ISO format for datetime
         }
-        
-        if self.updated_at:
-            data["updated_at"] = self.updated_at
-        
-        if self.last_login:
-            data["last_login"] = self.last_login
-            
-        if self._id:
-            data["_id"] = self._id
-            
-        return data
+    )
     
+    # Beanie-specific configuration
+    class Settings:
+        name = "users"  # MongoDB collection name
+        indexes = [
+            "username",  # Index on username for faster lookups
+            "email",  # Index on email for faster lookups
+            [("username", 1)],  # Unique index on username
+            [("email", 1)],  # Unique index on email
+        ]
+    
+    # Fields with validation
+    username: str = Field(
+        ...,
+        min_length=3,
+        max_length=32,
+        description="Unique username",
+        examples=["john_doe"],
+        validation_alias="user_name"
+    )
+    
+    email: str = Field(
+        ...,
+        description="User email address",
+        examples=["john@example.com"],
+        validation_alias="email_address"
+    )
+    
+    password_hash: str = Field(
+        ...,
+        description="Hashed password",
+        exclude=True  # Never include in API responses
+    )
+    
+    first_name: Optional[str] = Field(
+        default=None,
+        max_length=50,
+        description="User's first name",
+        examples=["John"],
+        validation_alias="firstname"
+    )
+    
+    last_name: Optional[str] = Field(
+        default=None,
+        max_length=50,
+        description="User's last name",
+        examples=["Doe"],
+        validation_alias="lastname"
+    )
+    
+    created_at: datetime = Field(
+        default_factory=datetime.now,
+        description="Timestamp when user was created",
+        validation_alias="date_created"
+    )
+    
+    updated_at: Optional[datetime] = Field(
+        default=None,
+        description="Timestamp when user was last updated",
+        validation_alias="date_updated"
+    )
+    
+    last_login: Optional[datetime] = Field(
+        default=None,
+        description="Timestamp of last login",
+        validation_alias="last_login_date"
+    )
+    
+    refresh_token_version: int = Field(
+        default=0,
+        description="Version number for refresh token rotation",
+        validation_alias="token_version"
+    )
+    
+    is_active: bool = Field(
+        default=True,
+        description="Whether user account is active"
+    )
+    
+    # Beanie Document automatically provides 'id' field as ObjectId
+    # No need to define it explicitly - Beanie handles MongoDB _id automatically
+    
+    # Validators
+    @field_validator('username', 'email')
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'User':
-        """Create User instance from dictionary (e.g., from database)"""
-        return cls(
-            username=data.get("username", ""),
-            email=data.get("email", ""),
-            first_name=data.get("first_name"),
-            last_name=data.get("last_name"),
-            created_at=data.get("created_at", datetime.now()),
-            updated_at=data.get("updated_at"),
-            last_login=data.get("last_login"),
-            is_active=data.get("is_active", True),
-            _id=data.get("_id")
-        )
+    def validate_not_empty(cls, v: str) -> str:
+        """Ensure required string fields are not empty or only whitespace"""
+        if not v or not v.strip():
+            raise ValueError('Field cannot be empty or only whitespace')
+        return v.strip()
+    
+    @field_validator('email')
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        """Basic email validation"""
+        if '@' not in v or '.' not in v.split('@')[-1]:
+            raise ValueError('Invalid email format')
+        return v.lower().strip()
+    
+    @field_validator('first_name', 'last_name')
+    @classmethod
+    def validate_names(cls, v: Optional[str]) -> Optional[str]:
+        """Clean up name fields"""
+        if v is not None and v.strip():
+            return v.strip()
+        return None
+    
+    # Password methods
+    @staticmethod
+    def hash_password(password: str) -> str:
+        """Hash a password using bcrypt"""
+        return pwd_context.hash(password)
+    
+    def verify_password(self, password: str) -> bool:
+        """Verify a password against the stored hash"""
+        return pwd_context.verify(password, self.password_hash)
+    
+    # Beanie Document Methods
+    # Beanie automatically handles to_dict() and from_dict() through Pydantic
+    # No need to implement these manually
     
     def update(self, **kwargs) -> None:
         """Update user fields and set updated_at timestamp"""
@@ -109,9 +208,9 @@ class User:
                 f"is_active={self.is_active})")
     
     def to_response(self) -> Dict[str, Any]:
-        """Convert user to API response format"""
+        """Convert user to API response format (excludes password_hash)"""
         return {
-            "id": str(self._id) if self._id else None,
+            "id": str(self.id) if self.id else None,
             "username": self.username,
             "email": self.email,
             "first_name": self.first_name,
