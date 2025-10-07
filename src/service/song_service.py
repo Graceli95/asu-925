@@ -1,22 +1,22 @@
 """
-Song service layer for the Songs CLI application
-Handles business logic and coordinates between CLI and data layers
+Song service layer for the Songs API application
+Handles business logic and coordinates between API and data layers using Beanie ODM
 """
 
 from typing import List, Optional, Dict, Any
 from datetime import datetime
-from src.db.song_db import SongsDatabase
+from src.db.song_db import SongDatabase
 from src.model import Song
 
 
 class SongService:
-    """Service layer for song operations"""
+    """Service layer for song operations with Beanie ODM"""
     
-    def __init__(self, database: SongsDatabase):
-        """Initialize the service with a database instance"""
+    def __init__(self, database: SongDatabase):
+        """Initialize the service with a Beanie database instance"""
         self.db = database
     
-    def add_song(self, title: str, artist: str, user: str, genre: Optional[str] = None, year: Optional[int] = None) -> Dict[str, Any]:
+    async def add_song(self, title: str, artist: str, user: str, genre: Optional[str] = None, year: Optional[int] = None) -> Dict[str, Any]:
         """
         Add a new song
         
@@ -34,24 +34,28 @@ class SongService:
         if year is not None and year > current_year:
             return {"success": False, "message": f"Year cannot be in the future (current year: {current_year})"}
         
+        # Business logic: check for duplicates
+        existing_song = await self.db.find_duplicate_song(title.strip(), artist.strip(), user)
+        if existing_song:
+            return {"success": False, "message": "Song already exists"}
+        
         # Delegate to database layer
-        created_song = self.db.add_song(title.strip(), artist.strip(), user, genre, year)
+        created_song = await self.db.add_song(title.strip(), artist.strip(), user, genre, year)
         
         if created_song:
-            # File creation is now a no-op (file_handler removed)
             return {"success": True, "message": f"Song '{title}' by '{artist}' added successfully."}
         else:
             return {"success": False, "message": "Failed to add song"}
     
-    def get_songs(self, user: Optional[str] = None) -> List[Song]:
+    async def get_songs(self, user: Optional[str] = None) -> List[Song]:
         """Get songs, optionally filtered by user"""
-        return self.db.get_songs(user)
+        return await self.db.get_songs(user)
     
-    def get_song_by_id(self, song_id: str, user: str) -> Optional[Song]:
+    async def get_song_by_id(self, song_id: str, user: str) -> Optional[Song]:
         """Get a specific song by ID"""
-        return self.db.get_song_by_id(song_id, user)
+        return await self.db.get_song_by_id(song_id, user)
     
-    def search_songs(self, query: str, user: Optional[str] = None) -> Dict[str, Any]:
+    async def search_songs(self, query: str, user: Optional[str] = None) -> Dict[str, Any]:
         """
         Search songs by title or artist
         
@@ -61,7 +65,10 @@ class SongService:
         if not query.strip():
             return {"success": False, "results": [], "message": "Search query cannot be empty"}
         
-        results = self.db.search_songs(query.strip(), user)
+        if len(query.strip()) < 2:
+            return {"success": False, "results": [], "message": "Search query must be at least 2 characters"}
+        
+        results = await self.db.search_songs(query.strip(), user)
         
         return {
             "success": True,
@@ -69,7 +76,7 @@ class SongService:
             "message": f"Found {len(results)} song(s) matching '{query}'"
         }
     
-    def update_song(self, song_id: str, user: str, **updates) -> Dict[str, Any]:
+    async def update_song(self, song_id: str, user: str, **updates) -> Dict[str, Any]:
         """
         Update a song
         
@@ -77,7 +84,7 @@ class SongService:
             Dict with 'success' boolean and 'message' string
         """
         # Validate that song exists and belongs to user
-        song = self.get_song_by_id(song_id, user)
+        song = await self.get_song_by_id(song_id, user)
         if not song:
             return {"success": False, "message": "Song not found or you don't have permission to update it"}
         
@@ -102,14 +109,14 @@ class SongService:
                 cleaned_updates[key] = value
         
         # Delegate to database layer
-        success = self.db.update_song(song_id, user, **cleaned_updates)
+        success = await self.db.update_song(song_id, user, **cleaned_updates)
         
         if success:
             return {"success": True, "message": "Song updated successfully"}
         else:
             return {"success": False, "message": "Failed to update song"}
     
-    def delete_song(self, song_id: str, user: str) -> Dict[str, Any]:
+    async def delete_song(self, song_id: str, user: str) -> Dict[str, Any]:
         """
         Delete a song
         
@@ -117,15 +124,14 @@ class SongService:
             Dict with 'success' boolean, 'message' string, and 'song' object if found
         """
         # Validate that song exists and belongs to user
-        song = self.get_song_by_id(song_id, user)
+        song = await self.get_song_by_id(song_id, user)
         if not song:
             return {"success": False, "message": "Song not found or you don't have permission to delete it"}
         
         # Delegate to database layer
-        success = self.db.delete_song(song_id, user)
+        success = await self.db.delete_song(song_id, user)
         
         if success:
-            # File deletion is now a no-op (file_handler removed)
             return {
                 "success": True,
                 "message": f"Song '{song.title}' by '{song.artist}' deleted successfully",
@@ -134,7 +140,7 @@ class SongService:
         else:
             return {"success": False, "message": "Failed to delete song"}
     
-    def play_song(self, song_id: str, user: str) -> Dict[str, Any]:
+    async def play_song(self, song_id: str, user: str) -> Dict[str, Any]:
         """
         Mark a song as played
         
@@ -142,30 +148,25 @@ class SongService:
             Dict with 'success' boolean, 'message' string, and 'song' object if found
         """
         # Validate that song exists and belongs to user
-        song = self.get_song_by_id(song_id, user)
+        song = await self.get_song_by_id(song_id, user)
         if not song:
             return {"success": False, "message": "Song not found or you don't have permission to play it"}
         
-        # Delegate to database layer
-        success = self.db.play_song(song_id, user)
-        
-        if success:
-            return {
-                "success": True,
-                "message": f"Now playing: '{song.title}' by '{song.artist}'",
-                "song": song
-            }
-        else:
-            return {"success": False, "message": "Failed to play song"}
+        # For now, just return success (no database update needed for playing)
+        return {
+            "success": True,
+            "message": f"Now playing: '{song.title}' by '{song.artist}'",
+            "song": song
+        }
     
-    def get_user_stats(self, user: str) -> Dict[str, Any]:
+    async def get_user_stats(self, user: str) -> Dict[str, Any]:
         """
         Get statistics for a user's song collection
         
         Returns:
             Dict with user statistics
         """
-        songs = self.get_songs(user)
+        songs = await self.get_songs(user)
         
         if not songs:
             return {
