@@ -27,7 +27,7 @@ class UserDatabase:
         """Get user by ID using Beanie"""
         try:
             from bson import ObjectId
-            return await User.find_one(User.id == ObjectId(user_id))
+            return await User.find_one({"_id": ObjectId(user_id)})
         except Exception as e:
             print(f"Error getting user by ID: {e}")
             return None
@@ -35,7 +35,8 @@ class UserDatabase:
     async def get_user_by_username(self, username: str) -> Optional[User]:
         """Get user by username using Beanie"""
         try:
-            return await User.find_one(User.username == username)
+            # Use proper Beanie query syntax
+            return await User.find_one({"username": username})
         except Exception as e:
             print(f"Error getting user by username: {e}")
             return None
@@ -43,7 +44,8 @@ class UserDatabase:
     async def get_user_by_email(self, email: str) -> Optional[User]:
         """Get user by email using Beanie"""
         try:
-            return await User.find_one(User.email == email)
+            # Use proper Beanie query syntax
+            return await User.find_one({"email": email})
         except Exception as e:
             print(f"Error getting user by email: {e}")
             return None
@@ -57,11 +59,10 @@ class UserDatabase:
             print(f"Error updating user: {e}")
             return False
     
-    async def delete_user(self, user_id: str) -> bool:
-        """Delete user using Beanie"""
+    async def delete_user(self, username: str) -> bool:
+        """Delete user by username using Beanie"""
         try:
-            from bson import ObjectId
-            user = await User.find_one(User.id == ObjectId(user_id))
+            user = await User.find_one({"username": username})
             
             if user:
                 await user.delete()
@@ -82,7 +83,7 @@ class UserDatabase:
     async def get_active_users(self) -> List[User]:
         """Get active users using Beanie"""
         try:
-            return await User.find(User.is_active == True).to_list()
+            return await User.find({"is_active": True}).to_list()
         except Exception as e:
             print(f"Error getting active users: {e}")
             return []

@@ -22,7 +22,12 @@ ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 
 # Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+try:
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+except Exception as e:
+    # Fallback to argon2 if bcrypt fails
+    print(f"Warning: bcrypt failed ({e}), falling back to argon2")
+    pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 # Security scheme
 security = HTTPBearer()
@@ -167,16 +172,56 @@ def authenticate_user(username: str, password: str, user) -> Union[bool, dict]:
     Returns:
         False if authentication fails, user dict if successful
     """
+    print(f"Auth: Starting authentication for user: {username}")
+    print(f"Auth: User object: {user}")
+    
     if not user:
+        print("Auth: No user provided")
         return False
     
-    if not verify_password(password, user.password_hash):
+    print(f"Auth: User is_active: {user.is_active}")
+    print(f"Auth: About to verify password...")
+    
+    try:
+        password_valid = verify_password(password, user.password_hash)
+        print(f"Auth: Password verification result: {password_valid}")
+    except Exception as e:
+        print(f"Auth: Password verification error: {e}")
+        return False
+    
+    if not password_valid:
+        print("Auth: Password verification failed")
         return False
     
     if not user.is_active:
+        print("Auth: User account is inactive")
         return False
     
+    print("Auth: Authentication successful")
     return user.to_response()
+
+
+async def get_current_user_from_middleware(request: Request) -> TokenData:
+    """
+    Get current user from request state (set by middleware)
+    
+    Args:
+        request: FastAPI request object
+        
+    Returns:
+        TokenData object with user information
+        
+    Raises:
+        HTTPException: If user not found in request state
+    """
+    if not hasattr(request.state, 'current_user') or not request.state.current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    return request.state.current_user
 
 
 # Optional authentication dependency (doesn't raise exception if no token)

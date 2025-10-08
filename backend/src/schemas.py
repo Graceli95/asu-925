@@ -171,6 +171,29 @@ class TokenData(BaseModel):
     version: Optional[int] = None  # For refresh token versioning
 
 
+class UserUpdate(BaseModel):
+    """Schema for updating user information"""
+    email: Optional[str] = Field(None, description="Email address")
+    first_name: Optional[str] = Field(None, max_length=50, description="First name")
+    last_name: Optional[str] = Field(None, max_length=50, description="Last name")
+    
+    @field_validator('email')
+    @classmethod
+    def validate_email(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            if '@' not in v or '.' not in v.split('@')[-1]:
+                raise ValueError('Invalid email format')
+            return v.lower().strip()
+        return v
+    
+    @field_validator('first_name', 'last_name')
+    @classmethod
+    def validate_names(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and not v.strip():
+            return None
+        return v.strip() if v else None
+
+
 class UserResponse(BaseModel):
     """Schema for user response (excludes password)"""
     id: str = Field(..., description="User ID")

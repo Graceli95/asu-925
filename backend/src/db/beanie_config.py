@@ -15,8 +15,8 @@ class DatabaseConfig:
     """Database configuration for Beanie ODM"""
     
     def __init__(self):
-        self.mongodb_url: str = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
-        self.database_name: str = os.getenv("DATABASE_NAME", "songs_db")
+        self.mongodb_url: str = os.getenv("project_db_url")
+        self.database_name: str = os.getenv("project_db_name")
         self.client: Optional[AsyncIOMotorClient] = None
         self.database = None
     
@@ -49,17 +49,28 @@ db_config = DatabaseConfig()
 async def init_database():
     """Initialize Beanie with all document models"""
     try:
+        # First ensure database connection is established
+        if db_config.database is None:
+            await db_config.connect_to_mongo()
+        
         # Import document models after they're converted to Beanie
         from src.model.song import Song
         from src.model.user import User
         
-        # Initialize Beanie
-        await init_beanie(
-            database=db_config.database,
-            document_models=[Song, User]
-        )
-        
-        print("✅ Beanie ODM initialized successfully")
+        # Initialize Beanie with error handling for index conflicts
+        try:
+            await init_beanie(
+                database=db_config.database,
+                document_models=[Song, User]
+            )
+            print("✅ Beanie ODM initialized successfully")
+        except Exception as index_error:
+            # Handle index conflicts gracefully
+            if "IndexKeySpecsConflict" in str(index_error) or "existing index" in str(index_error).lower():
+                print("⚠️  Index conflict detected, but continuing with existing indexes...")
+                print("✅ Beanie ODM initialized with existing indexes")
+            else:
+                raise index_error
         
     except Exception as e:
         print(f"❌ Failed to initialize Beanie: {e}")

@@ -12,6 +12,7 @@ from fastapi.security import HTTPBearer
 from src.routers import song_router, user_router, auth_router
 from src.schemas import MessageResponse
 from src.middleware import RequestLoggingMiddleware, CORSSecurityMiddleware
+from src.db.beanie_config import init_database
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -38,15 +39,19 @@ app = FastAPI(
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],  # Specific origins instead of *
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["*"],  # Expose headers to frontend
 )
 
 # Add custom middleware (order matters - last added is first executed)
 app.add_middleware(CORSSecurityMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
+# Add JWT authentication middleware for protected routes
+from src.middleware import JWTAuthMiddleware
+app.add_middleware(JWTAuthMiddleware)
 
 # Add security configuration for Swagger UI
 # Define the security scheme
@@ -88,6 +93,16 @@ def custom_openapi():
 
 app.openapi = custom_openapi
 
+@app.on_event("startup")
+async def startup_event():
+    """Initialize Beanie database on startup"""
+    try:
+        await init_database()
+        print("🚀 FastAPI application started with Beanie ODM")
+    except Exception as e:
+        print(f"❌ Failed to initialize Beanie database: {e}")
+        raise e
+
 # Custom Exception for Invalid Song ID Format
 class InvalidSongIdFormatException(Exception):
     """Exception raised when song_id path parameter is not a valid integer"""
@@ -122,6 +137,11 @@ app.include_router(auth_router)
 app.include_router(song_router)
 app.include_router(user_router)
 
+@app.options("/{full_path:path}")
+async def options_handler(full_path: str):
+    """Handle CORS preflight requests"""
+    return {"message": "OK"}
+
 @app.get("/", response_model=MessageResponse)
 async def root():
     """Root endpoint"""
@@ -129,6 +149,50 @@ async def root():
         "message": "Welcome to Songs API! Visit /docs for API documentation.",
         "success": True
     }
+
+@app.get("/health", response_model=MessageResponse)
+async def health_check():
+    """Health check endpoint for CORS testing"""
+    return {
+        "message": "API is healthy and CORS is working",
+        "success": True
+    }
+
+@app.get("/test-cookies")
+async def test_cookies(request: Request):
+    """Test endpoint to check cookies"""
+    return {
+        "cookies": dict(request.cookies),
+        "headers": dict(request.headers)
+    }
+
+@app.get("/debug/users", response_model=MessageResponse)
+async def debug_users():
+    """Debug endpoint to check users in database"""
+    try:
+        from src.db.user_db import UserDatabase
+        user_db = UserDatabase()
+        users = await user_db.get_all_users()
+        
+        user_info = []
+        for user in users:
+            user_info.append({
+                "username": user.username,
+                "email": user.email,
+                "is_active": user.is_active,
+                "created_at": str(user.created_at)
+            })
+        
+        return {
+            "message": f"Found {len(users)} users in database",
+            "success": True,
+            "users": user_info
+        }
+    except Exception as e:
+        return {
+            "message": f"Error checking users: {str(e)}",
+            "success": False
+        }
 
 if __name__ == "__main__":
     import uvicorn

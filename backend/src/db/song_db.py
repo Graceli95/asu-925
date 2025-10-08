@@ -36,7 +36,7 @@ class SongDatabase:
         """Get songs from database using Beanie"""
         try:
             if user:
-                return await Song.find(Song.user == user).to_list()
+                return await Song.find({"user": user}).to_list()
             else:
                 return await Song.find_all().to_list()
         except Exception as e:
@@ -47,7 +47,7 @@ class SongDatabase:
         """Get song by ID using Beanie"""
         try:
             from bson import ObjectId
-            return await Song.find_one(Song.id == ObjectId(song_id), Song.user == user)
+            return await Song.find_one({"_id": ObjectId(song_id), "user": user})
         except Exception as e:
             print(f"Error getting song by ID: {e}")
             return None
@@ -56,7 +56,7 @@ class SongDatabase:
         """Update song using Beanie"""
         try:
             from bson import ObjectId
-            song = await Song.find_one(Song.id == ObjectId(song_id), Song.user == user)
+            song = await Song.find_one({"_id": ObjectId(song_id), "user": user})
             
             if song:
                 for key, value in updates.items():
@@ -74,7 +74,7 @@ class SongDatabase:
         """Delete song using Beanie"""
         try:
             from bson import ObjectId
-            song = await Song.find_one(Song.id == ObjectId(song_id), Song.user == user)
+            song = await Song.find_one({"_id": ObjectId(song_id), "user": user})
             
             if song:
                 await song.delete()

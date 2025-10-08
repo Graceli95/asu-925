@@ -7,6 +7,8 @@ from typing import Generator
 from src.db.song_db import SongDatabase
 from src.db.user_db import UserDatabase
 from src.service.song_service import SongService
+from src.service.auth_service import AuthService
+from src.service.user_service import UserService
 
 # Singleton database instances
 _song_db_instance = None
@@ -46,6 +48,32 @@ def get_song_service() -> Generator[SongService, None, None]:
     """
     db = get_song_database()
     service = SongService(db)
+    try:
+        yield service
+    finally:
+        # Cleanup can be added here if needed
+        pass
+
+def get_auth_service() -> Generator[AuthService, None, None]:
+    """
+    Dependency injection for AuthService
+    Provides an AuthService instance with UserDatabase dependency.
+    """
+    user_db = get_user_database()
+    service = AuthService(user_db)
+    try:
+        yield service
+    finally:
+        # Cleanup can be added here if needed
+        pass
+
+def get_user_service() -> Generator[UserService, None, None]:
+    """
+    Dependency injection for UserService
+    Provides a UserService instance with UserDatabase dependency.
+    """
+    user_db = get_user_database()
+    service = UserService(user_db)
     try:
         yield service
     finally:

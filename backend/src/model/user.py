@@ -47,8 +47,6 @@ class User(Document):
     class Settings:
         name = "users"  # MongoDB collection name
         indexes = [
-            "username",  # Index on username for faster lookups
-            "email",  # Index on email for faster lookups
             [("username", 1)],  # Unique index on username
             [("email", 1)],  # Unique index on email
         ]

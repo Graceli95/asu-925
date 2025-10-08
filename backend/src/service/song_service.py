@@ -158,45 +158,4 @@ class SongService:
             "message": f"Now playing: '{song.title}' by '{song.artist}'",
             "song": song
         }
-    
-    async def get_user_stats(self, user: str) -> Dict[str, Any]:
-        """
-        Get statistics for a user's song collection
-        
-        Returns:
-            Dict with user statistics
-        """
-        songs = await self.get_songs(user)
-        
-        if not songs:
-            return {
-                "total_songs": 0,
-                "genres": {},
-                "years": {},
-                "artists": {}
-            }
-        
-        # Calculate statistics
-        genres = {}
-        years = {}
-        artists = {}
-        
-        for song in songs:
-            # Genre stats
-            genre = song.genre or "Unknown"
-            genres[genre] = genres.get(genre, 0) + 1
-            
-            # Year stats
-            year = song.year or "Unknown"
-            years[year] = years.get(year, 0) + 1
-            
-            # Artist stats
-            artist = song.artist
-            artists[artist] = artists.get(artist, 0) + 1
-        
-        return {
-            "total_songs": len(songs),
-            "genres": dict(sorted(genres.items(), key=lambda x: x[1], reverse=True)),
-            "years": dict(sorted(years.items(), key=lambda x: x[1], reverse=True)),
-            "artists": dict(sorted(artists.items(), key=lambda x: x[1], reverse=True))
-        }
+
