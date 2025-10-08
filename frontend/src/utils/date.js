@@ -7,6 +7,15 @@
 export function formatDate(date, options = {}) {
   if (!date) return '';
 
+  // Handle case where date might be an object with nested date properties
+  if (typeof date === 'object' && !(date instanceof Date)) {
+    console.warn('formatDate received object:', date);
+    // Try to extract date string if it's a nested object
+    if (date.$date) date = date.$date;
+    else if (date.date) date = date.date;
+    else return String(date); // Fallback to string conversion
+  }
+
   const defaultOptions = {
     year: 'numeric',
     month: 'short',
@@ -18,9 +27,13 @@ export function formatDate(date, options = {}) {
 
   try {
     const dateObj = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(dateObj.getTime())) {
+      console.error('Invalid date:', date);
+      return '';
+    }
     return dateObj.toLocaleDateString('en-US', defaultOptions);
   } catch (error) {
-    console.error('Error formatting date:', error);
+    console.error('Error formatting date:', error, date);
     return '';
   }
 }

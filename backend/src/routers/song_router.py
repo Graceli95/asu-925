@@ -9,7 +9,7 @@ from datetime import datetime
 
 from src.dependencies import get_song_service
 from src.service.song_service import SongService
-from src.auth import get_current_user
+from src.auth import get_current_user_from_request
 from src.schemas import (
     SongCreate,
     SongUpdate,
@@ -29,7 +29,8 @@ router = APIRouter(
 @router.post("", response_model=SongResponse, status_code=201)
 async def create_song(
     song: SongCreate,
-    current_user = Depends(get_current_user),
+    request: Request,
+    current_user = Depends(get_current_user_from_request),
     song_service: SongService = Depends(get_song_service)
 ):
     """Create a new song"""
@@ -41,7 +42,7 @@ async def create_song(
             detail=f"Year cannot be in the future (current year: {datetime.now().year})"
         )
     
-    result = song_service.add_song(
+    result = await song_service.add_song(
         title=song.title,
         artist=song.artist,
         user=current_user.username,  # Use authenticated user
@@ -53,7 +54,7 @@ async def create_song(
         raise HTTPException(status_code=400, detail=result["message"])
     
     # Get the created song
-    created_song = song_service.get_songs(user=current_user.username)[0]
+    created_song = (await song_service.get_songs(user=current_user.username))[0]
     
     return SongResponse(
         id=str(created_song.id),
@@ -68,14 +69,15 @@ async def create_song(
 
 @router.get("", response_model=SongListResponse)
 async def list_songs(
-    current_user = Depends(get_current_user),
+    request: Request,
+    current_user = Depends(get_current_user_from_request),
     user: Optional[str] = Query(None, description="Filter songs by user"),
     song_service: SongService = Depends(get_song_service)
 ):
     """List all songs, optionally filtered by user"""
-    # If no user filter specified, default to current user's songs
-    filter_user = user if user else current_user.username
-    songs = song_service.get_songs(user=filter_user)
+    # If user filter specified, filter by that user, otherwise show all songs
+    filter_user = user if user is not None else None
+    songs = await song_service.get_songs(user=filter_user)
     
     song_responses = [
         SongResponse(
@@ -95,15 +97,16 @@ async def list_songs(
 
 @router.get("/search", response_model=SearchResponse)
 async def search_songs(
-    current_user = Depends(get_current_user),
+    request: Request,
+    current_user = Depends(get_current_user_from_request),
     query: str = Query(..., min_length=1, description="Search query for title or artist"),
     user: Optional[str] = Query(None, description="Filter by user"),
     song_service: SongService = Depends(get_song_service)
 ):
     """Search songs by title or artist"""
-    # If no user filter specified, default to current user's songs
-    filter_user = user if user else current_user.username
-    result = song_service.search_songs(query, user=filter_user)
+    # If user filter specified, filter by that user, otherwise search all songs
+    filter_user = user if user is not None else None
+    result = await song_service.search_songs(query, user=filter_user)
     
     if not result["success"]:
         raise HTTPException(status_code=400, detail=result["message"])
@@ -128,16 +131,15 @@ async def search_songs(
         message=result["message"]
     )
 
-# This endpoint is being used as an example for int_parsing problems for an example, 
-# do not relate it back to the mongoDB
 @router.get("/{song_id}", response_model=SongResponse)
 async def get_song(
-    song_id: int = Path(..., description="Song ID"),
-    current_user = Depends(get_current_user),
+    request: Request,
+    song_id: str = Path(..., description="Song ID"),
+    current_user = Depends(get_current_user_from_request),
     song_service: SongService = Depends(get_song_service)
 ):
     """Get a specific song by ID"""
-    song = song_service.get_song_by_id(song_id, current_user.username)
+    song = await song_service.get_song_by_id(song_id, current_user.username)
     
     if not song:
         raise HTTPException(
@@ -158,9 +160,10 @@ async def get_song(
 
 @router.put("/{song_id}", response_model=MessageResponse)
 async def update_song(
+    request: Request,
     song_update: SongUpdate,
     song_id: str = Path(..., description="Song ID"),
-    current_user = Depends(get_current_user),
+    current_user = Depends(get_current_user_from_request),
     song_service: SongService = Depends(get_song_service)
 ):
     """Update a song"""
@@ -178,7 +181,7 @@ async def update_song(
     if not updates:
         raise HTTPException(status_code=400, detail="No updates provided")
     
-    result = song_service.update_song(song_id, current_user.username, **updates)
+    result = await song_service.update_song(song_id, current_user.username, **updates)
     
     if not result["success"]:
         raise HTTPException(status_code=400, detail=result["message"])
@@ -187,12 +190,13 @@ async def update_song(
 
 @router.delete("/{song_id}", response_model=MessageResponse)
 async def delete_song(
+    request: Request,
     song_id: str = Path(..., description="Song ID"),
-    current_user = Depends(get_current_user),
+    current_user = Depends(get_current_user_from_request),
     song_service: SongService = Depends(get_song_service)
 ):
     """Delete a song"""
-    result = song_service.delete_song(song_id, current_user.username)
+    result = await song_service.delete_song(song_id, current_user.username)
     
     if not result["success"]:
         raise HTTPException(status_code=404, detail=result["message"])
@@ -201,12 +205,13 @@ async def delete_song(
 
 @router.post("/{song_id}/play", response_model=MessageResponse)
 async def play_song(
+    request: Request,
     song_id: str = Path(..., description="Song ID"),
-    current_user = Depends(get_current_user),
+    current_user = Depends(get_current_user_from_request),
     song_service: SongService = Depends(get_song_service)
 ):
     """Mark a song as played"""
-    result = song_service.play_song(song_id, current_user.username)
+    result = await song_service.play_song(song_id, current_user.username)
     
     if not result["success"]:
         raise HTTPException(status_code=404, detail=result["message"])

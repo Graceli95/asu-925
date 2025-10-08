@@ -37,7 +37,8 @@ class JWTAuthMiddleware(BaseHTTPMiddleware):
             "/openapi.json",
             "/auth/register",
             "/auth/login",
-            "/auth/login-form"
+            "/auth/login-form",
+            "/auth/refresh"
         ]
     
     async def dispatch(self, request: Request, call_next):
@@ -48,8 +49,15 @@ class JWTAuthMiddleware(BaseHTTPMiddleware):
         
         # Get the request path
         path = request.url.path
+        method = request.method
         
-        print(f"JWTAuthMiddleware: Processing request for {path}")
+        print(f"JWTAuthMiddleware: Processing {method} request for {path}")
+        
+        # Skip authentication for OPTIONS requests (CORS preflight)
+        if method == "OPTIONS":
+            print(f"JWTAuthMiddleware: Skipping auth for OPTIONS request")
+            response = await call_next(request)
+            return response
         
         # Skip authentication for excluded paths (exact match only)
         is_excluded = path in self.excluded_paths

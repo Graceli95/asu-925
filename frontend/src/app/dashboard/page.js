@@ -8,9 +8,9 @@ import { Button } from '../../components/ui/button';
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import { useAuth } from '../../context/AuthContext';
 import { useSongs } from '../../hooks/useSongs';
-import { SongList } from '../../components/SongList';
-import { SongForm } from '../../components/SongForm';
-import { SearchBar } from '../../components/SearchBar';
+import { SongList } from '../../components/songs/SongList';
+import { SongForm } from '../../components/songs/SongForm';
+import { SearchBar } from '../../components/auth/SearchBar';
 import { Music, Plus, BarChart3, TrendingUp, Calendar } from 'lucide-react';
 
 /**
@@ -19,7 +19,7 @@ import { Music, Plus, BarChart3, TrendingUp, Calendar } from 'lucide-react';
 export default function DashboardPage() {
   const router = useRouter();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
-  const { songs, loading: songsLoading, searchSongs, clearSearch } = useSongs();
+  const { songs, loading: songsLoading, searchSongs, clearSearch, createSong, updateSong } = useSongs({ user: user?.username });
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingSong, setEditingSong] = useState(null);
 

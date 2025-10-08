@@ -194,16 +194,18 @@ async def login_user_form(
 
 @router.post("/refresh", response_model=Token)
 async def refresh_token(
-    refresh_request: RefreshTokenRequest,
+    request: Request,
     response: Response,
+    refresh_request: RefreshTokenRequest = None,
     auth_service: AuthService = Depends(get_auth_service)
 ):
     """
     Refresh access token using refresh token
     
     Args:
-        refresh_request: Refresh token request containing refresh token
+        request: FastAPI request object (for accessing cookies)
         response: FastAPI response object for setting cookies
+        refresh_request: Refresh token request containing refresh token (optional)
         auth_service: Authentication service dependency
         
     Returns:
@@ -212,7 +214,26 @@ async def refresh_token(
     Raises:
         HTTPException: If refresh token is invalid or expired
     """
-    result = await auth_service.refresh_token(refresh_request)
+    # Try to get refresh token from request body first, then from cookies
+    refresh_token_value = None
+    
+    if refresh_request and refresh_request.refresh_token:
+        refresh_token_value = refresh_request.refresh_token
+        print(f"RefreshRouter: Using refresh token from request body")
+    else:
+        # Try to get refresh token from HTTP-only cookie
+        refresh_token_value = request.cookies.get("refresh_token")
+        print(f"RefreshRouter: Using refresh token from cookie: {refresh_token_value[:20] if refresh_token_value else 'None'}...")
+    
+    if not refresh_token_value:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Refresh token not provided"
+        )
+    
+    # Create RefreshTokenRequest with the token
+    refresh_request_obj = RefreshTokenRequest(refresh_token=refresh_token_value)
+    result = await auth_service.refresh_token(refresh_request_obj)
     
     if not result["success"]:
         raise HTTPException(

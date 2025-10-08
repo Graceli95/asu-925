@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { MainLayout } from '../../layouts/MainLayout';
-import { Button } from '../../components/ui/button';
-import { Alert, AlertDescription } from '../../components/ui/alert';
-import { useAuth } from '../../context/AuthContext';
-import { songService } from '../../services/songService';
-import { SongForm } from '../../components/SongForm';
+import { MainLayout } from '../../../../layouts/MainLayout';
+import { Button } from '../../../../components/ui/button';
+import { Alert, AlertDescription } from '../../../../components/ui/alert';
+import { useAuth } from '../../../../context/AuthContext';
+import { songService } from '../../../../services/songService';
+import { SongForm } from '../../../../components/songs/SongForm';
 import { ArrowLeft } from 'lucide-react';
 
 /**

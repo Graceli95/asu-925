@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Alert, AlertDescription } from './ui/alert';
-import { extractYoutubeId, getYoutubeThumbnailUrl } from '../utils/youtube';
-import { formatDate } from '../utils/date';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Button } from '../ui/button';
+import { Alert, AlertDescription } from '../ui/alert';
+import { extractYoutubeId, getYoutubeThumbnailUrl } from '../../utils/youtube';
+import { formatDate } from '../../utils/date';
 import { Play, Edit, Trash2, Music, ExternalLink } from 'lucide-react';
 
 /**
@@ -52,6 +52,11 @@ export function SongCard({ song, onEdit, onDelete, onPlay, youtubeLink }) {
               </CardTitle>
             </Link>
             <p className="text-sm text-muted-foreground mt-1">{song.artist}</p>
+            {song.user && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Added by: <span className="font-medium">{song.user}</span>
+              </p>
+            )}
           </div>
           <div className="flex gap-1">
             <Button

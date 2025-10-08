@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Card, CardContent } from './ui/card';
-import { Button } from './ui/button';
-import { Alert, AlertDescription } from './ui/alert';
-import { extractYoutubeId } from '../utils/youtube';
+import { Card, CardContent } from '../ui/card';
+import { Button } from '../ui/button';
+import { Alert, AlertDescription } from '../ui/alert';
+import { extractYoutubeId } from '../../utils/youtube';
 import { Play, Pause, Volume2, VolumeX, Maximize } from 'lucide-react';
 
 /**

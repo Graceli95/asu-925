@@ -2,15 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { MainLayout } from '../../layouts/MainLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Button } from '../../components/ui/button';
-import { Alert, AlertDescription } from '../../components/ui/alert';
-import { useAuth } from '../../context/AuthContext';
-import { songService } from '../../services/songService';
-import { SongList } from '../../components/SongList';
-import { SearchBar } from '../../components/SearchBar';
-import { formatDate } from '../../utils/date';
+import { MainLayout } from '../../../layouts/MainLayout';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
+import { Button } from '../../../components/ui/button';
+import { Alert, AlertDescription } from '../../../components/ui/alert';
+import { useAuth } from '../../../context/AuthContext';
+import { songService } from '../../../services/songService';
+import { SongList } from '../../../components/songs/SongList';
+import { SearchBar } from '../../../components/auth/SearchBar';
+import { formatDate } from '../../../utils/date';
 import { ArrowLeft, User, Music, BarChart3, TrendingUp, Calendar } from 'lucide-react';
 
 /**

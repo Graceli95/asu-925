@@ -168,7 +168,7 @@ class TokenData(BaseModel):
     username: Optional[str] = None
     user_id: Optional[str] = None
     type: Optional[str] = None  # For distinguishing access vs refresh tokens
-    version: Optional[int] = None  # For refresh token versioning
+    version: Optional[int] = 0  # For refresh token versioning, default to 0
 
 
 class UserUpdate(BaseModel):

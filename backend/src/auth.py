@@ -86,19 +86,30 @@ def verify_token(token: str) -> TokenData:
     )
     
     try:
+        print(f"Auth: Verifying token: {token[:20]}...")
+        print(f"Auth: Using SECRET_KEY: {SECRET_KEY[:10]}...")
+        print(f"Auth: Using ALGORITHM: {ALGORITHM}")
+        
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        print(f"Auth: Token payload decoded successfully: {payload}")
+        
         username: str = payload.get("sub")
         user_id: str = payload.get("user_id")
         token_type: str = payload.get("type")
         version: int = payload.get("version")
         
+        print(f"Auth: Extracted data - username: {username}, user_id: {user_id}, type: {token_type}, version: {version}")
+        
         if username is None:
+            print("Auth: Username is None, raising credentials exception")
             raise credentials_exception
             
         token_data = TokenData(username=username, user_id=user_id, type=token_type, version=version)
+        print(f"Auth: Created TokenData: {token_data}")
         return token_data
         
-    except JWTError:
+    except JWTError as e:
+        print(f"Auth: JWTError during token verification: {e}")
         raise credentials_exception
 
 

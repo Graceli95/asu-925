@@ -64,9 +64,11 @@ class AuthService:
                 first_name=user_data.first_name,
                 last_name=user_data.last_name
             )
+            print(f"AuthService: Created user with refresh_token_version: {user.refresh_token_version}")
             
             # Save to database
             created_user = await self.user_db.add_user(user)
+            print(f"AuthService: Saved user with refresh_token_version: {created_user.refresh_token_version}")
             if not created_user:
                 return {
                     "success": False, 
@@ -149,6 +151,7 @@ class AuthService:
             
             # Create refresh token (longer expiration)
             refresh_token_expires = timedelta(days=7)  # 7 days
+            print(f"AuthService: Creating refresh token with version: {user.refresh_token_version}")
             refresh_token = create_access_token(
                 data={
                     "sub": user.username, 
@@ -158,6 +161,7 @@ class AuthService:
                 },
                 expires_delta=refresh_token_expires
             )
+            print(f"AuthService: Created refresh token: {refresh_token[:20]}...")
             
             # Update last login
             user.update_last_login()
@@ -197,11 +201,17 @@ class AuthService:
             Dict with 'success' boolean, 'token' object if successful, and 'message' string
         """
         try:
+            print(f"AuthService: Starting refresh token validation")
+            print(f"AuthService: Refresh token: {refresh_request.refresh_token[:20]}...")
+            
             # Validate refresh token
             token_data = verify_token(refresh_request.refresh_token)
+            print(f"AuthService: Token verification successful: {token_data}")
             
             # Check if it's a refresh token
+            print(f"AuthService: Token type: {token_data.type}")
             if not hasattr(token_data, 'type') or token_data.type != 'refresh':
+                print(f"AuthService: Invalid token type: {token_data.type}")
                 return {
                     "success": False,
                     "message": "Invalid token type",
@@ -209,8 +219,10 @@ class AuthService:
                 }
             
             # Get user
+            print(f"AuthService: Looking up user: {token_data.username}")
             user = await self.user_db.get_user_by_username(token_data.username)
             if not user:
+                print(f"AuthService: User not found: {token_data.username}")
                 return {
                     "success": False,
                     "message": "User not found",
@@ -218,7 +230,21 @@ class AuthService:
                 }
             
             # Check if refresh token version matches current version (token rotation security)
-            if token_data.version != user.refresh_token_version:
+            print(f"AuthService: Token version: {token_data.version}, User version: {user.refresh_token_version}")
+            # Handle None version (should be treated as 0)
+            token_version = token_data.version if token_data.version is not None else 0
+            user_version = user.refresh_token_version if user.refresh_token_version is not None else 0
+            
+            print(f"AuthService: Normalized versions - token: {token_version}, user: {user_version}")
+            
+            # Handle version mismatch - if token version is higher, update user version
+            if token_version > user_version:
+                print(f"AuthService: Token version ({token_version}) > user version ({user_version}), updating user version")
+                user.refresh_token_version = token_version
+                await self.user_db.update_user(user)
+                print(f"AuthService: Updated user refresh_token_version to: {user.refresh_token_version}")
+            elif token_version < user_version:
+                print(f"AuthService: Token version ({token_version}) < user version ({user_version}), token is revoked")
                 return {
                     "success": False,
                     "message": "Refresh token has been revoked",
@@ -226,8 +252,10 @@ class AuthService:
                 }
             
             # Increment refresh token version (invalidates all previous refresh tokens)
+            # This should happen AFTER validation but BEFORE creating new tokens
             user.refresh_token_version += 1
             await self.user_db.update_user(user)
+            print(f"AuthService: Incremented user refresh_token_version to: {user.refresh_token_version}")
             
             # Create new access token
             access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)

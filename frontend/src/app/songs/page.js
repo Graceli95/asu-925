@@ -1,15 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { MainLayout } from '../../layouts/MainLayout';
 import { Button } from '../../components/ui/button';
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import { useAuth } from '../../context/AuthContext';
 import { useSongs } from '../../hooks/useSongs';
-import { SongList } from '../../components/SongList';
-import { SongForm } from '../../components/SongForm';
-import { SearchBar } from '../../components/SearchBar';
+import { SongList } from '../../components/songs/SongList';
+import { SongForm } from '../../components/songs/SongForm';
+import { SearchBar } from '../../components/auth/SearchBar';
 import { Plus, Music, Search } from 'lucide-react';
 
 /**
@@ -17,7 +17,7 @@ import { Plus, Music, Search } from 'lucide-react';
  */
 export default function SongsPage() {
   const router = useRouter();
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   const { 
     songs, 
     loading: songsLoading, 
@@ -27,11 +27,14 @@ export default function SongsPage() {
     updateSong,
     deleteSong,
     searchSongs,
-    clearSearch
+    clearSearch,
+    fetchSongs
   } = useSongs();
   
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingSong, setEditingSong] = useState(null);
+  const [showAllSongs, setShowAllSongs] = useState(true);
+  const [localSearchQuery, setLocalSearchQuery] = useState('');
 
   // Redirect if not authenticated
   React.useEffect(() => {
@@ -39,6 +42,29 @@ export default function SongsPage() {
       router.push('/login');
     }
   }, [isAuthenticated, authLoading, router]);
+
+  // Use useMemo for client-side filtering - this is INSTANT and eliminates API calls!
+  const filteredSongs = useMemo(() => {
+    let filtered = songs;
+
+    // Filter by user if "My Songs" is selected
+    if (!showAllSongs && user?.username) {
+      filtered = filtered.filter(song => song.user === user.username);
+    }
+
+    // Filter by search query (client-side search)
+    if (localSearchQuery.trim()) {
+      const query = localSearchQuery.toLowerCase();
+      filtered = filtered.filter(song => 
+        song.title.toLowerCase().includes(query) ||
+        song.artist.toLowerCase().includes(query) ||
+        song.genre?.toLowerCase().includes(query) ||
+        song.user?.toLowerCase().includes(query)
+      );
+    }
+
+    return filtered;
+  }, [songs, showAllSongs, user?.username, localSearchQuery]);
 
   const handleAddSong = () => {
     setEditingSong(null);
@@ -88,7 +114,8 @@ export default function SongsPage() {
   };
 
   const handleSearch = (query) => {
-    searchSongs(query);
+    // Client-side search with useMemo - NO API CALLS!
+    setLocalSearchQuery(query);
   };
 
   if (authLoading) {
@@ -113,10 +140,10 @@ export default function SongsPage() {
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <Music className="h-8 w-8" />
-              My Songs
+              {showAllSongs ? 'All Songs' : 'My Songs'}
             </h1>
             <p className="text-muted-foreground">
-              Manage your music collection
+              {showAllSongs ? 'Browse songs from all users' : 'Manage your music collection'}
             </p>
           </div>
           <Button onClick={handleAddSong} className="flex items-center gap-2">
@@ -125,19 +152,35 @@ export default function SongsPage() {
           </Button>
         </div>
 
-        {/* Search Bar */}
-        <div className="flex items-center gap-4">
-          <SearchBar
-            onSearch={handleSearch}
-            value={searchQuery}
-            loading={songsLoading}
-            placeholder="Search songs by title or artist..."
-          />
-          {searchQuery && (
-            <Button variant="outline" onClick={clearSearch}>
-              Clear Search
+        {/* Search Bar and Filter */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+          <div className="flex-1">
+            <SearchBar
+              onSearch={handleSearch}
+              value={localSearchQuery}
+              loading={false}
+              placeholder="Search songs by title, artist, genre, or user..."
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              variant={showAllSongs ? "default" : "outline"}
+              onClick={() => setShowAllSongs(true)}
+            >
+              All Songs
             </Button>
-          )}
+            <Button 
+              variant={!showAllSongs ? "default" : "outline"}
+              onClick={() => setShowAllSongs(false)}
+            >
+              My Songs
+            </Button>
+            {localSearchQuery && (
+              <Button variant="outline" onClick={() => setLocalSearchQuery('')}>
+                Clear Search
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Error Display */}
@@ -147,14 +190,34 @@ export default function SongsPage() {
           </Alert>
         )}
 
+        {/* Results Count */}
+        {!songsLoading && (
+          <div className="text-sm text-muted-foreground">
+            Showing <span className="font-semibold">{filteredSongs.length}</span> of{' '}
+            <span className="font-semibold">{songs.length}</span> songs
+            {localSearchQuery && (
+              <span> matching "{localSearchQuery}"</span>
+            )}
+            {!showAllSongs && (
+              <span> (your songs only)</span>
+            )}
+          </div>
+        )}
+
         {/* Songs List */}
         <SongList
-          songs={songs}
+          songs={filteredSongs}
           loading={songsLoading}
           onEdit={handleEditSong}
           onDelete={handleDeleteSong}
           onPlay={handlePlaySong}
-          emptyMessage={searchQuery ? "No songs found matching your search." : "No songs yet. Add your first song to get started!"}
+          emptyMessage={
+            localSearchQuery 
+              ? `No songs found matching "${localSearchQuery}"` 
+              : showAllSongs 
+                ? "No songs yet. Be the first to add one!" 
+                : "You haven't added any songs yet."
+          }
         />
 
         {/* Add/Edit Song Form Modal */}

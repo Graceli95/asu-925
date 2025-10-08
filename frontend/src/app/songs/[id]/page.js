@@ -2,16 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { MainLayout } from '../../layouts/MainLayout';
-import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Alert, AlertDescription } from '../../components/ui/alert';
-import { useAuth } from '../../context/AuthContext';
-import { songService } from '../../services/songService';
-import { YouTubePlayer } from '../../components/YouTubePlayer';
-import { SongForm } from '../../components/SongForm';
-import { formatDate } from '../../utils/date';
-import { extractYoutubeId } from '../../utils/youtube';
+import { MainLayout } from '../../../layouts/MainLayout';
+import { Button } from '../../../components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
+import { Alert, AlertDescription } from '../../../components/ui/alert';
+import { useAuth } from '../../../context/AuthContext';
+import { songService } from '../../../services/songService';
+import { YouTubePlayer } from '../../../components/songs/YouTubePlayer';
+import { SongForm } from '../../../components/songs/SongForm';
+import { formatDate } from '../../../utils/date';
+import { extractYoutubeId } from '../../../utils/youtube';
 import { ArrowLeft, Edit, Trash2, Play, Music, Calendar, User } from 'lucide-react';
 
 /**

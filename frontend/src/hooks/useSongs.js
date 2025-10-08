@@ -115,7 +115,8 @@ export function useSongs(options = {}) {
         return;
       }
       
-      const data = await songService.searchSongs(query, user);
+      // Search all songs (don't filter by user)
+      const data = await songService.searchSongs(query);
       setSongs(data.results || []);
     } catch (error) {
       setError(error.message);

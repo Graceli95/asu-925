@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Input } from './ui/input';
-import { Button } from './ui/button';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Input } from '../ui/input';
+import { Button } from '../ui/button';
 import { Search, X } from 'lucide-react';
-import { debounce } from '../utils/date';
 
 /**
  * SearchBar component with debounced search functionality
@@ -14,13 +13,32 @@ import { debounce } from '../utils/date';
  */
 export function SearchBar({ onSearch, placeholder = "Search songs...", value = "", loading = false }) {
   const [searchQuery, setSearchQuery] = useState(value);
+  const debounceTimerRef = useRef(null);
 
-  // Debounced search function
-  const debouncedSearch = debounce((query) => {
-    if (onSearch) {
-      onSearch(query);
+  // Memoized debounced search function
+  const debouncedSearch = useCallback((query) => {
+    // Clear existing timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
     }
-  }, 300);
+
+    // Set new timer
+    debounceTimerRef.current = setTimeout(() => {
+      if (onSearch) {
+        // For client-side filtering, no minimum length needed
+        onSearch(query);
+      }
+    }, 150); // Fast response for instant client-side filtering
+  }, [onSearch]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   // Handle input change
   const handleChange = (e) => {

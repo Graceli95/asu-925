@@ -45,7 +45,7 @@ apiClient.interceptors.response.use(
 
       try {
         console.log('Attempting token refresh...');
-        // Attempt to refresh token
+        // Attempt to refresh token - the refresh token will be sent via HTTP-only cookies
         await apiClient.post('/auth/refresh');
         
         console.log('Token refresh successful, retrying original request');
