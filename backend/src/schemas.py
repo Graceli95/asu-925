@@ -13,6 +13,7 @@ class SongCreate(BaseModel):
     artist: str = Field(..., min_length=1, description="Artist name")
     genre: Optional[str] = Field(None, description="Music genre")
     year: Optional[int] = Field(None, ge=1000, le=9999, description="Release year")
+    youtube_link: Optional[str] = Field(None, max_length=500, description="YouTube video URL")
     
     @field_validator('title', 'artist')
     @classmethod
@@ -27,6 +28,20 @@ class SongCreate(BaseModel):
         if v is not None and not v.strip():
             return None
         return v.strip() if v else None
+    
+    @field_validator('youtube_link')
+    @classmethod
+    def validate_youtube_link(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v.strip():
+            cleaned_link = v.strip()
+            # Basic validation for YouTube URLs
+            if not (cleaned_link.startswith('https://www.youtube.com/') or 
+                   cleaned_link.startswith('https://youtu.be/') or
+                   cleaned_link.startswith('http://www.youtube.com/') or
+                   cleaned_link.startswith('http://youtu.be/')):
+                raise ValueError('Please enter a valid YouTube URL')
+            return cleaned_link
+        return None
 
 
 class SongUpdate(BaseModel):
@@ -35,6 +50,7 @@ class SongUpdate(BaseModel):
     artist: Optional[str] = Field(None, min_length=1, description="Artist name")
     genre: Optional[str] = Field(None, description="Music genre")
     year: Optional[int] = Field(None, ge=1000, le=9999, description="Release year")
+    youtube_link: Optional[str] = Field(None, max_length=500, description="YouTube video URL")
     
     @field_validator('title', 'artist')
     @classmethod
@@ -49,6 +65,20 @@ class SongUpdate(BaseModel):
         if v is not None and not v.strip():
             return None
         return v.strip() if v else None
+    
+    @field_validator('youtube_link')
+    @classmethod
+    def validate_youtube_link(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v.strip():
+            cleaned_link = v.strip()
+            # Basic validation for YouTube URLs
+            if not (cleaned_link.startswith('https://www.youtube.com/') or 
+                   cleaned_link.startswith('https://youtu.be/') or
+                   cleaned_link.startswith('http://www.youtube.com/') or
+                   cleaned_link.startswith('http://youtu.be/')):
+                raise ValueError('Please enter a valid YouTube URL')
+            return cleaned_link
+        return None
 
 
 class SongResponse(BaseModel):
@@ -59,6 +89,7 @@ class SongResponse(BaseModel):
     user: str
     genre: Optional[str] = None
     year: Optional[int] = None
+    youtube_link: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
     

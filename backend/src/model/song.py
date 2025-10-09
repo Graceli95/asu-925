@@ -97,6 +97,14 @@ class Song(Document):
         validation_alias="release_year"  # Alias for input: "release_year" or "year"
     )
     
+    youtube_link: Optional[str] = Field(
+        default=None,
+        max_length=500,
+        description="YouTube video URL",
+        examples=["https://www.youtube.com/watch?v=dQw4w9WgXcQ"],
+        validation_alias="youtube_url"  # Alias for input: "youtube_url" or "youtube_link"
+    )
+    
     created_at: datetime = Field(
         default_factory=datetime.now,
         description="Timestamp when song was created",
@@ -136,6 +144,21 @@ class Song(Document):
         if v is not None and v > datetime.now().year:
             raise ValueError(f'Year cannot be in the future (current year: {datetime.now().year})')
         return v
+    
+    @field_validator('youtube_link')
+    @classmethod
+    def validate_youtube_link(cls, v: Optional[str]) -> Optional[str]:
+        """Clean up YouTube link field"""
+        if v is not None and v.strip():
+            cleaned_link = v.strip()
+            # Basic validation for YouTube URLs
+            if not (cleaned_link.startswith('https://www.youtube.com/') or 
+                   cleaned_link.startswith('https://youtu.be/') or
+                   cleaned_link.startswith('http://www.youtube.com/') or
+                   cleaned_link.startswith('http://youtu.be/')):
+                raise ValueError('Please enter a valid YouTube URL')
+            return cleaned_link
+        return None
     
     # Beanie Document Methods
     # Beanie automatically handles to_dict() and from_dict() through Pydantic
@@ -178,6 +201,7 @@ class Song(Document):
             "user": self.user,
             "genre": self.genre,
             "year": self.year,
+            "youtube_link": self.youtube_link,
             "created_at": self.created_at,
             "updated_at": self.updated_at
         }

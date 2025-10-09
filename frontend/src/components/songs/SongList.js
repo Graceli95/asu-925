@@ -10,6 +10,7 @@ import { SongCard } from './SongCard';
  * @param {Function} props.onPlay - Play callback
  * @param {boolean} props.loading - Loading state
  * @param {string} props.emptyMessage - Message when no songs
+ * @param {Object} props.currentUser - Current logged-in user (optional)
  */
 export function SongList({ 
   songs = [], 
@@ -17,7 +18,8 @@ export function SongList({
   onDelete, 
   onPlay, 
   loading = false,
-  emptyMessage = "No songs found"
+  emptyMessage = "No songs found",
+  currentUser
 }) {
   if (loading) {
     return (
@@ -47,17 +49,15 @@ export function SongList({
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {songs.map((song) => {
-        // Get YouTube link from localStorage
-        const youtubeLink = localStorage.getItem(`song_${song.id}_youtube`);
-        
         return (
           <SongCard
             key={song.id}
             song={song}
-            youtubeLink={youtubeLink}
+            youtubeLink={song.youtube_link}
             onEdit={onEdit}
             onDelete={onDelete}
             onPlay={onPlay}
+            currentUser={currentUser}
           />
         );
       })}

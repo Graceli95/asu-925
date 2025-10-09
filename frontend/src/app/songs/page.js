@@ -211,6 +211,7 @@ export default function SongsPage() {
           onEdit={handleEditSong}
           onDelete={handleDeleteSong}
           onPlay={handlePlaySong}
+          currentUser={user}
           emptyMessage={
             localSearchQuery 
               ? `No songs found matching "${localSearchQuery}"` 

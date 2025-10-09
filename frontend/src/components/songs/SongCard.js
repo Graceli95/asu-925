@@ -15,12 +15,16 @@ import { Play, Edit, Trash2, Music, ExternalLink } from 'lucide-react';
  * @param {Function} props.onDelete - Delete callback
  * @param {Function} props.onPlay - Play callback
  * @param {string} props.youtubeLink - YouTube link (optional)
+ * @param {Object} props.currentUser - Current logged-in user (optional)
  */
-export function SongCard({ song, onEdit, onDelete, onPlay, youtubeLink }) {
+export function SongCard({ song, onEdit, onDelete, onPlay, youtubeLink, currentUser }) {
   const [showVideo, setShowVideo] = useState(false);
   
   const youtubeId = youtubeLink ? extractYoutubeId(youtubeLink) : null;
   const thumbnailUrl = youtubeId ? getYoutubeThumbnailUrl(youtubeId) : null;
+  
+  // Check if current user can delete this song (only if they're the owner)
+  const canDelete = currentUser && song.user && currentUser.username === song.user;
 
   const handlePlay = () => {
     if (onPlay) {
@@ -67,14 +71,16 @@ export function SongCard({ song, onEdit, onDelete, onPlay, youtubeLink }) {
             >
               <Edit className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleDelete}
-              className="h-8 w-8 text-destructive hover:text-destructive"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            {canDelete && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleDelete}
+                className="h-8 w-8 text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
       </CardHeader>

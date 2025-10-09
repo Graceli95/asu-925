@@ -47,7 +47,8 @@ async def create_song(
         artist=song.artist,
         user=current_user.username,  # Use authenticated user
         genre=song.genre,
-        year=song.year
+        year=song.year,
+        youtube_link=song.youtube_link
     )
     
     if not result["success"]:
@@ -63,6 +64,7 @@ async def create_song(
         user=created_song.user,
         genre=created_song.genre,
         year=created_song.year,
+        youtube_link=created_song.youtube_link,
         created_at=created_song.created_at,
         updated_at=created_song.updated_at
     )
@@ -87,6 +89,7 @@ async def list_songs(
             user=song.user,
             genre=song.genre,
             year=song.year,
+            youtube_link=song.youtube_link,
             created_at=song.created_at,
             updated_at=song.updated_at
         )
@@ -119,6 +122,7 @@ async def search_songs(
             user=song.user,
             genre=song.genre,
             year=song.year,
+            youtube_link=song.youtube_link,
             created_at=song.created_at,
             updated_at=song.updated_at
         )
@@ -154,6 +158,7 @@ async def get_song(
         user=song.user,
         genre=song.genre,
         year=song.year,
+        youtube_link=song.youtube_link,
         created_at=song.created_at,
         updated_at=song.updated_at
     )

@@ -21,7 +21,7 @@ import { ArrowLeft, Edit, Trash2, Play, Music, Calendar, User } from 'lucide-rea
 export default function SongDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   
   const [song, setSong] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -45,13 +45,10 @@ export default function SongDetailPage() {
     }
   }, [songId, isAuthenticated]);
 
-  // Load YouTube link from localStorage
+  // Load YouTube link from song data
   useEffect(() => {
-    if (song) {
-      const storedLink = localStorage.getItem(`song_${song.id}_youtube`);
-      if (storedLink) {
-        setYoutubeLink(storedLink);
-      }
+    if (song && song.youtube_link) {
+      setYoutubeLink(song.youtube_link);
     }
   }, [song]);
 
@@ -96,12 +93,6 @@ export default function SongDetailPage() {
   const handleFormSubmit = async (songData) => {
     try {
       await songService.updateSong(songId, songData);
-      
-      // Update YouTube link in localStorage
-      if (songData.youtube_link) {
-        localStorage.setItem(`song_${songId}_youtube`, songData.youtube_link);
-        setYoutubeLink(songData.youtube_link);
-      }
       
       setShowEditForm(false);
       await fetchSong(); // Refresh song data
@@ -188,14 +179,16 @@ export default function SongDetailPage() {
               <Edit className="h-4 w-4" />
               Edit
             </Button>
-            <Button
-              variant="outline"
-              onClick={handleDelete}
-              className="flex items-center gap-2 text-destructive hover:text-destructive"
-            >
-              <Trash2 className="h-4 w-4" />
-              Delete
-            </Button>
+            {user && song && user.username === song.user && (
+              <Button
+                variant="outline"
+                onClick={handleDelete}
+                className="flex items-center gap-2 text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete
+              </Button>
+            )}
           </div>
         </div>
 

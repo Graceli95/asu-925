@@ -16,7 +16,7 @@ class SongService:
         """Initialize the service with a Beanie database instance"""
         self.db = database
     
-    async def add_song(self, title: str, artist: str, user: str, genre: Optional[str] = None, year: Optional[int] = None) -> Dict[str, Any]:
+    async def add_song(self, title: str, artist: str, user: str, genre: Optional[str] = None, year: Optional[int] = None, youtube_link: Optional[str] = None) -> Dict[str, Any]:
         """
         Add a new song
         
@@ -40,7 +40,7 @@ class SongService:
             return {"success": False, "message": "Song already exists"}
         
         # Delegate to database layer
-        created_song = await self.db.add_song(title.strip(), artist.strip(), user, genre, year)
+        created_song = await self.db.add_song(title.strip(), artist.strip(), user, genre, year, youtube_link)
         
         if created_song:
             return {"success": True, "message": f"Song '{title}' by '{artist}' added successfully."}

@@ -79,12 +79,8 @@ export function SongForm({ song = null, onSubmit, onCancel, loading = false }) {
       artist: formData.artist.trim(),
       genre: formData.genre || null,
       year: formData.year ? parseInt(formData.year) : null,
+      youtube_link: formData.youtube_link.trim() || null,
     };
-
-    // Add YouTube link to local storage (not sent to backend)
-    if (formData.youtube_link.trim()) {
-      localStorage.setItem(`song_${song?.id || 'new'}_youtube`, formData.youtube_link.trim());
-    }
 
     onSubmit(submitData);
   };
@@ -205,7 +201,7 @@ export function SongForm({ song = null, onSubmit, onCancel, loading = false }) {
               </Alert>
             )}
             <p className="text-xs text-muted-foreground">
-              YouTube links are stored locally and not saved to the server.
+              YouTube links are saved to the server and will be available when viewing songs.
             </p>
           </div>
 

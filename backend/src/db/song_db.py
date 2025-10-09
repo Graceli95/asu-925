@@ -15,7 +15,7 @@ class SongDatabase:
         """Initialize the database layer"""
         pass  # Beanie handles connection through global initialization
     
-    async def add_song(self, title: str, artist: str, user: str, genre: str = None, year: int = None) -> Optional[Song]:
+    async def add_song(self, title: str, artist: str, user: str, genre: str = None, year: int = None, youtube_link: str = None) -> Optional[Song]:
         """Add song to database using Beanie"""
         try:
             song = Song(
@@ -24,6 +24,7 @@ class SongDatabase:
                 user=user,
                 genre=genre,
                 year=year,
+                youtube_link=youtube_link,
                 created_at=datetime.now()
             )
             await song.insert()
